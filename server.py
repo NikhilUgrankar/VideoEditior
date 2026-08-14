@@ -39,7 +39,7 @@ if not os.path.exists(SAMPLE_BEAT):
 if not os.path.exists(SAMPLE_VIDEO):
     generate_sample_bike_video(SAMPLE_VIDEO)
 
-def process_render_job(job_id: str, video_paths: List[str], music_path: str, preset: str, resolution: str, aspect_ratio: str, lut_preset: str, show_hud: bool):
+def process_render_job(job_id: str, video_paths: List[str], music_path: str, preset: str, resolution: str, aspect_ratio: str, lut_preset: str, show_hud: bool, target_duration: str = "auto"):
     """Background rendering worker function."""
     try:
         jobs_db[job_id]["status"] = "processing"
@@ -65,7 +65,7 @@ def process_render_job(job_id: str, video_paths: List[str], music_path: str, pre
         jobs_db[job_id]["progress"] = 50.0
 
         composer = AutoComposer(style_preset=preset, resolution=resolution, aspect_ratio=aspect_ratio)
-        edit_plan = composer.create_edit_plan(all_highlights, audio_info, target_duration=min(45.0, audio_info["duration"]))
+        edit_plan = composer.create_edit_plan(all_highlights, audio_info, target_duration=target_duration)
 
         output_filename = f"cinematic_bike_edit_{job_id[:8]}.mp4"
         output_filepath = os.path.join(EXPORTS_DIR, output_filename)
@@ -94,11 +94,51 @@ def process_render_job(job_id: str, video_paths: List[str], music_path: str, pre
         jobs_db[job_id]["error"] = str(e)
 
 
+@app.post("/api/analyze")
+async def analyze_videos(videos: List[UploadFile] = File(default=[])):
+    """Fast pre-analysis to sum total raw video duration and suggest Insta360-style edit options."""
+    analyzer = VideoAnalyzer(ffprobe_path=FFPROBE_EXE)
+    total_duration = 0.0
+    video_count = 0
+
+    if videos and len(videos) > 0:
+        for v in videos:
+            if v.filename:
+                temp_p = os.path.join(UPLOADS_DIR, f"temp_meta_{v.filename}")
+                with open(temp_p, "wb") as f:
+                    shutil.copyfileobj(v.file, f)
+                meta = analyzer.get_metadata(temp_p)
+                total_duration += meta.get("duration", 0.0)
+                video_count += 1
+                if os.path.exists(temp_p):
+                    try:
+                        os.remove(temp_p)
+                    except Exception:
+                        pass
+
+    if total_duration <= 0:
+        total_duration = 30.0
+
+    formatted_time = f"{int(total_duration // 60)}m {int(total_duration % 60)}s" if total_duration >= 60 else f"{int(total_duration)}s"
+
+    return {
+        "video_count": video_count,
+        "total_raw_duration_sec": round(total_duration, 1),
+        "total_raw_duration_formatted": formatted_time,
+        "recommended_music": [
+            {"id": "sample", "name": "🎵 Synthwave Action Beat (High Energy 128 BPM)"},
+            {"id": "lofi", "name": "🎧 Highway Lo-Fi Chill (Smooth Cruise 95 BPM)"},
+            {"id": "rock", "name": "🎸 Hard Rock Engine Roar (140 BPM)"}
+        ]
+    }
+
+
 @app.post("/api/render")
 async def start_render(
     videos: List[UploadFile] = File(default=[]),
     music: Optional[UploadFile] = File(default=None),
     preset: str = Form("adrenaline"),
+    target_duration: str = Form("auto"),
     resolution: str = Form("1080p"),
     aspect_ratio: str = Form("16:9"),
     lut_preset: str = Form("teal_orange"),
@@ -143,7 +183,7 @@ async def start_render(
     # Start background processing thread
     thread = threading.Thread(
         target=process_render_job,
-        args=(job_id, saved_video_paths, music_path, preset, resolution, aspect_ratio, lut_preset, show_hud)
+        args=(job_id, saved_video_paths, music_path, preset, resolution, aspect_ratio, lut_preset, show_hud, target_duration)
     )
     thread.start()
 

@@ -296,6 +296,22 @@ body {
     margin-top: 16px;
 }
 
+.duration-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 6px;
+}
+
+.raw-total-badge {
+    font-size: 11px;
+    font-weight: 700;
+    color: var(--accent-teal);
+    background: rgba(13, 148, 136, 0.15);
+    padding: 2px 8px;
+    border-radius: 4px;
+}
+
 .input-label {
     display: block;
     font-size: 12px;

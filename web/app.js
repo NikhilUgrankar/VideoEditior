@@ -51,11 +51,41 @@ document.addEventListener("DOMContentLoaded", () => {
         }
     });
 
-    function handleVideoFiles(files) {
+    const rawDurationBadge = document.getElementById("raw-total-duration-badge");
+    const targetDurationSelect = document.getElementById("target-duration-select");
+
+    async function handleVideoFiles(files) {
         for (let file of files) {
             uploadedFiles.push(file);
         }
         renderVideoList();
+        await analyzeUploadedFootage();
+    }
+
+    async function analyzeUploadedFootage() {
+        if (uploadedFiles.length === 0) return;
+        
+        rawDurationBadge.innerText = "Analyzing footage...";
+
+        const formData = new FormData();
+        for (let f of uploadedFiles) {
+            formData.append("videos", f);
+        }
+
+        try {
+            const res = await fetch("/api/analyze", {
+                method: "POST",
+                body: formData
+            });
+
+            if (res.ok) {
+                const data = await res.json();
+                rawDurationBadge.innerText = `Total Upload: ${data.total_raw_duration_formatted}`;
+            }
+        } catch (e) {
+            console.error("Analysis error:", e);
+            rawDurationBadge.innerText = "Total Upload: Calculated";
+        }
     }
 
     function renderVideoList() {
@@ -81,7 +111,7 @@ document.addEventListener("DOMContentLoaded", () => {
     customMusicInput.addEventListener("change", (e) => {
         if (e.target.files.length) {
             customMusicFile = e.target.files[0];
-            sampleMusicSelect.options[0].text = `🎵 Custom: ${customMusicFile.name}`;
+            sampleMusicSelect.options[3].text = `🎵 Custom: ${customMusicFile.name}`;
             sampleMusicSelect.value = "custom";
         }
     });
@@ -99,7 +129,7 @@ document.addEventListener("DOMContentLoaded", () => {
     renderBtn.addEventListener("click", async () => {
         progressModal.hidden = false;
         progressFill.style.width = "5%";
-        statusText.innerText = "Initializing video engine...";
+        statusText.innerText = "Initializing ultrafast video engine...";
         pctText.innerText = "5%";
 
         const formData = new FormData();
@@ -117,6 +147,7 @@ document.addEventListener("DOMContentLoaded", () => {
         }
 
         formData.append("preset", selectedPreset);
+        formData.append("target_duration", targetDurationSelect.value);
         formData.append("resolution", resolutionSelect.value);
         formData.append("aspect_ratio", aspectSelect.value);
         formData.append("lut_preset", lutSelect.value);

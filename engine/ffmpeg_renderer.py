@@ -30,11 +30,14 @@ class FFmpegRenderer:
 
         lut_filter = LUTGenerator.get_ffmpeg_filter(lut_preset)
 
-        # Generate temporary HUD Overlay image if enabled
+        # Pass real computed telemetry stats to HUD generator
         hud_png = None
         if show_hud:
+            top_clip = clips[0] if clips else {}
+            speed_val = top_clip.get("speed_kmh", 115)
+            lean_val = top_clip.get("lean_angle_deg", 24)
             hud_png = os.path.join(os.path.dirname(output_path), "temp_hud_overlay.png")
-            HUDOverlayGenerator.create_hud_image(width=target_w, height=target_h, speed_kmh=145, lean_angle_deg=34, output_path=hud_png)
+            HUDOverlayGenerator.create_hud_image(width=target_w, height=target_h, speed_kmh=speed_val, lean_angle_deg=lean_val, output_path=hud_png)
 
         if not clips:
             print("[FFmpegRenderer Error] No clips in edit plan.")
@@ -44,7 +47,7 @@ class FFmpegRenderer:
         filter_chains = []
         concat_v_inputs = []
 
-        # Process Video Clips
+        # Process Video Clips with ultrafast seeking
         for idx, clip in enumerate(clips):
             v_path = clip["video_path"]
             src_s = clip["src_start"]
@@ -90,13 +93,11 @@ class FFmpegRenderer:
 
         main_v_node = "[vconcat]"
 
-        # Letterbox for 2.35:1 aspect ratio option
         if aspect_ratio == "2.35:1":
             letterbox_h = int(target_h * 0.12)
             filter_chains.append(f"{main_v_node}drawbox=y=0:h={letterbox_h}:color=black:t=fill,drawbox=y=ih-{letterbox_h}:h={letterbox_h}:color=black:t=fill[vletter];")
             main_v_node = "[vletter]"
 
-        # Telemetry HUD Overlay
         if hud_available:
             filter_chains.append(f"{main_v_node}[{hud_input_idx}:v]overlay=0:0[vhud];")
             final_v_out = "[vhud]"
@@ -107,18 +108,21 @@ class FFmpegRenderer:
 
         cmd = [
             self.ffmpeg_path, "-y",
+            "-threads", "0",
             *inputs,
             "-filter_complex", full_filter_graph,
             "-map", final_v_out
         ]
 
         if music_available:
-            cmd.extend(["-map", f"{music_input_idx}:a", "-c:a", "aac", "-b:a", "320k"])
+            cmd.extend(["-map", f"{music_input_idx}:a", "-c:a", "aac", "-b:a", "192k"])
 
+        # Ultrafast encoding options for max speed
         cmd.extend([
             "-c:v", "libx264",
-            "-preset", "fast",
-            "-crf", "19",
+            "-preset", "ultrafast",
+            "-tune", "zerolatency",
+            "-crf", "22",
             "-pix_fmt", "yuv420p",
             "-shortest",
             output_path

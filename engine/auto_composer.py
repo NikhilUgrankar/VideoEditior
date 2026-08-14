@@ -8,17 +8,32 @@ class AutoComposer:
         self.resolution = resolution
         self.aspect_ratio = aspect_ratio
 
-    def create_edit_plan(self, video_highlights, audio_analysis, target_duration=60.0):
+    def create_edit_plan(self, video_highlights, audio_analysis, target_duration="auto"):
         """
         Synthesizes raw video highlight clips into a timed, beat-synced editing timeline.
+        Supports target_duration = 'auto', '15', '30', '60', 'full', or float.
         """
         beats = audio_analysis.get("beats", [])
         drops = audio_analysis.get("drops", [])
         music_duration = audio_analysis.get("duration", 60.0)
 
-        total_edit_time = min(target_duration, music_duration)
-        if total_edit_time <= 0:
+        # Calculate total available raw highlight duration
+        total_raw_highlights_duration = sum(h.get("duration", 4.0) for h in video_highlights) if video_highlights else 30.0
+
+        if target_duration == "15":
+            total_edit_time = 15.0
+        elif target_duration == "30":
             total_edit_time = 30.0
+        elif target_duration == "60":
+            total_edit_time = 60.0
+        elif target_duration == "full":
+            total_edit_time = total_raw_highlights_duration
+        else: # 'auto' or float
+            if isinstance(target_duration, (int, float)):
+                total_edit_time = float(target_duration)
+            else:
+                # Auto calculates best highlight length (min 15s, max 60s or total raw highlights)
+                total_edit_time = min(total_raw_highlights_duration, max(15.0, min(60.0, total_raw_highlights_duration * 0.5)))
 
         # Define clip duration target based on style
         if self.style_preset == "shorts_beat":

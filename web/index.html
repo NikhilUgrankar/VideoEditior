@@ -58,12 +58,29 @@
                         <!-- Populated dynamically via JS -->
                     </div>
 
+                    <!-- Output Length Selector (Insta360 Style) -->
+                    <div class="music-selector">
+                        <div class="duration-header">
+                            <label class="input-label">Output Edit Length</label>
+                            <span class="raw-total-badge" id="raw-total-duration-badge">Total Upload: --</span>
+                        </div>
+                        <select id="target-duration-select" class="select-input">
+                            <option value="auto" selected>✨ Auto Best Highlights (AI Smart Length)</option>
+                            <option value="15">⏱️ 15 Seconds (YouTube Short / Reel)</option>
+                            <option value="30">⏱️ 30 Seconds (Social Edit)</option>
+                            <option value="60">⏱️ 60 Seconds (Full MotoVlog)</option>
+                            <option value="full">🔥 Full Length Match (100% Sum of Raw Footage)</option>
+                        </select>
+                    </div>
+
                     <!-- Music Upload / Selector -->
                     <div class="music-selector">
-                        <label class="input-label">Background Beat Track</label>
+                        <label class="input-label">Background Beat Track (AI Recommender)</label>
                         <div class="music-input-group">
                             <select id="sample-music-select" class="select-input">
-                                <option value="sample">🎵 Royalty-Free Synthwave Action Beat (Built-in)</option>
+                                <option value="sample">🎵 Royalty-Free Synthwave Action Beat (128 BPM)</option>
+                                <option value="lofi">🎧 Highway Lo-Fi Chill Beat (95 BPM)</option>
+                                <option value="rock">🎸 Hard Rock Engine Roar Beat (140 BPM)</option>
                                 <option value="custom">📤 Upload Custom MP3 / WAV Track...</option>
                             </select>
                             <input type="file" id="custom-music-input" accept="audio/*,.mp3,.wav,.m4a" hidden>

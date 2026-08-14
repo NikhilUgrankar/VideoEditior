@@ -44,9 +44,5 @@ class HUDOverlayGenerator:
         draw.text((lx - 75, ly - 30), "LEAN ANGLE", fill=(148, 163, 184, 250), font_size=11)
         draw.text((lx - 45, ly - 10), f"{int(lean_angle_deg)}°", fill=(245, 158, 11, 255), font_size=32)
 
-        # Top-left Branding watermark badge
-        draw.rounded_rectangle([40, 40, 240, 80], radius=8, fill=(15, 23, 42, 200), outline=(236, 72, 153, 200), width=2)
-        draw.text((55, 50), "MOTO CINEMATIC", fill=(255, 255, 255, 255), font_size=16)
-
         img.save(output_path, "PNG")
         return output_path
