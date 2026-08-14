@@ -41,7 +41,7 @@ def run_test():
     def log_pct(pct, msg):
         print(f"   [{pct}%] {msg}")
 
-    success = renderer.render_edit(edit_plan, sample_audio, out_video, lut_preset="teal_orange", show_hud=True, progress_callback=log_pct)
+    success = renderer.render_edit(edit_plan, sample_audio, out_video, lut_preset="teal_orange", show_hud=False, progress_callback=log_pct)
     
     if success and os.path.exists(out_video):
         size_mb = os.path.getsize(out_video) / (1024 * 1024)

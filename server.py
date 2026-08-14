@@ -142,7 +142,7 @@ async def start_render(
     resolution: str = Form("1080p"),
     aspect_ratio: str = Form("16:9"),
     lut_preset: str = Form("teal_orange"),
-    show_hud: bool = Form(True)
+    show_hud: bool = Form(False)
 ):
     job_id = str(uuid.uuid4())
     job_dir = os.path.join(UPLOADS_DIR, job_id)

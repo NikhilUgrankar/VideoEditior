@@ -13,7 +13,6 @@ document.addEventListener("DOMContentLoaded", () => {
     const resolutionSelect = document.getElementById("resolution-select");
     const aspectSelect = document.getElementById("aspect-select");
     const lutSelect = document.getElementById("lut-select");
-    const hudToggle = document.getElementById("hud-toggle");
     const renderBtn = document.getElementById("render-btn");
     
     const progressModal = document.getElementById("progress-modal");
@@ -151,7 +150,7 @@ document.addEventListener("DOMContentLoaded", () => {
         formData.append("resolution", resolutionSelect.value);
         formData.append("aspect_ratio", aspectSelect.value);
         formData.append("lut_preset", lutSelect.value);
-        formData.append("show_hud", hudToggle.checked);
+        formData.append("show_hud", false);
 
         try {
             const response = await fetch("/api/render", {
