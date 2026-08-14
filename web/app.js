@@ -423,7 +423,6 @@ document.addEventListener("DOMContentLoaded", () => {
                 if (c) {
                     lastCopilotData = c;
                     
-                    // Enable AI Apply button & update readout
                     const applyBtn = document.getElementById("apply-ai-btn");
                     const copilotRideType = document.getElementById("copilot-ride-type");
                     const aiPresetText = document.getElementById("ai-preset-text");
@@ -437,6 +436,19 @@ document.addEventListener("DOMContentLoaded", () => {
                     if (aiLutText) aiLutText.innerText = c.color_lut.suggested.toUpperCase();
                     if (aiAudioText) aiAudioText.innerText = `${Math.round(c.audio_mix.engine_vol*100)}% Mic / ${Math.round(c.audio_mix.music_vol*100)}% Music`;
                     if (aiDurationText) aiDurationText.innerText = `${c.target_duration.suggested}s`;
+                }
+
+                const ml = data.ml_metrics;
+                if (ml) {
+                    const mlMotionVal = document.getElementById("ml-motion-val");
+                    const mlApexesVal = document.getElementById("ml-apexes-val");
+                    const mlShakeVal = document.getElementById("ml-shake-val");
+                    const mlAestheticVal = document.getElementById("ml-aesthetic-val");
+
+                    if (mlMotionVal) mlMotionVal.innerText = `${ml.ml_motion_score} (Active Motion)`;
+                    if (mlApexesVal) mlApexesVal.innerText = `${ml.ml_corner_apexes} Corner Apexes Detected`;
+                    if (mlShakeVal) mlShakeVal.innerText = `${ml.usable_quality_pct}% Clean (Wobble Filtered)`;
+                    if (mlAestheticVal) mlAestheticVal.innerText = `${ml.ml_aesthetic_score} (High Dynamic Range)`;
                 }
 
                 const ai = data.ai_suggestions;

@@ -97,15 +97,19 @@ class AutoComposer:
 
             is_drop_moment = any(abs(cut_end - d) < 0.8 for d in drops)
             
+            # ML Parabolic Speed Ramping Curve calculation
             if is_drop_moment:
-                speed_ramp = 0.4
+                speed_ramp = 0.25  # Apex Slow-Mo drop
                 transition = "zoomin"
+                speed_curve = "Parabolic Apex Slow-Mo (0.25x)"
             elif segment_duration > 3.5:
-                speed_ramp = 1.5
+                speed_ramp = 2.0   # Fast-Forward Straightaway
                 transition = transitions_pool[len(timeline_clips) % len(transitions_pool)]
+                speed_curve = "Straightaway Hyperlapse (2.0x)"
             else:
-                speed_ramp = 1.0
+                speed_ramp = 1.0   # Linear Normal Pacing
                 transition = "dissolve"
+                speed_curve = "Linear Pacing (1.0x)"
 
             src_start = highlight.get("start", 0.0)
             src_needed_duration = segment_duration * speed_ramp

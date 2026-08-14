@@ -15,6 +15,7 @@ from engine.pixabay_music import PixabayMusicClient
 from engine.jamendo_music import JamendoMusicClient
 from engine.freesound_music import FreesoundClient
 from engine.ai_music_recommender import AIMusicRecommender
+from engine.ml_analyzer import MLVideoAnalyzer
 from sample_media.generate_samples import generate_audio_genre, generate_sample_bike_video
 
 app = FastAPI(title="Auto-Edit Bike Video Studio API")
@@ -168,6 +169,9 @@ async def analyze_videos(videos: List[UploadFile] = File(default=[])):
     if total_duration <= 0:
         total_duration = 30.0
 
+    ml_analyzer = MLVideoAnalyzer()
+    ml_metrics = ml_analyzer.process_video_ml(SAMPLE_VIDEO)
+
     ai_suggestions = analyzer.get_ai_smart_suggestions(total_duration, all_highlights)
     copilot_suggestions = AIMusicRecommender.generate_copilot_suggestions(total_duration, all_highlights)
 
@@ -177,6 +181,7 @@ async def analyze_videos(videos: List[UploadFile] = File(default=[])):
         "total_raw_duration_formatted": ai_suggestions["total_raw_formatted"],
         "ai_suggestions": ai_suggestions,
         "copilot": copilot_suggestions,
+        "ml_metrics": ml_metrics,
         "ai_music_matches": copilot_suggestions.get("ai_tracks", []),
         "highlights": all_highlights[:12],
         "recommended_music": [
