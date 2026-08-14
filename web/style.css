@@ -19,6 +19,10 @@
     padding: 0;
 }
 
+[hidden] {
+    display: none !important;
+}
+
 body {
     background-color: var(--bg-main);
     background-image: 
@@ -471,6 +475,10 @@ video {
 }
 
 /* Progress Modal */
+.modal-backdrop[hidden] {
+    display: none !important;
+}
+
 .modal-backdrop {
     position: fixed;
     top: 0; left: 0; width: 100vw; height: 100vh;
