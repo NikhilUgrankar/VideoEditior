@@ -365,7 +365,21 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
     // Dropzone handlers
+    const browseBtn = document.getElementById("browse-btn");
+    if (browseBtn) {
+        browseBtn.addEventListener("click", (e) => {
+            e.stopPropagation();
+            if (videoInput) videoInput.click();
+        });
+    }
+
     if (dropzone) {
+        dropzone.addEventListener("click", (e) => {
+            if (e.target !== browseBtn && videoInput) {
+                videoInput.click();
+            }
+        });
+
         dropzone.addEventListener("dragover", (e) => {
             e.preventDefault();
             dropzone.classList.add("dragover");
@@ -378,7 +392,7 @@ document.addEventListener("DOMContentLoaded", () => {
         dropzone.addEventListener("drop", (e) => {
             e.preventDefault();
             dropzone.classList.remove("dragover");
-            if (e.dataTransfer.files.length) {
+            if (e.dataTransfer && e.dataTransfer.files && e.dataTransfer.files.length) {
                 handleVideoFiles(e.dataTransfer.files);
             }
         });
@@ -386,8 +400,9 @@ document.addEventListener("DOMContentLoaded", () => {
 
     if (videoInput) {
         videoInput.addEventListener("change", (e) => {
-            if (e.target.files.length) {
+            if (e.target.files && e.target.files.length) {
                 handleVideoFiles(e.target.files);
+                videoInput.value = ""; // Reset value so change event fires reliably on re-selection
             }
         });
     }
@@ -528,18 +543,63 @@ document.addEventListener("DOMContentLoaded", () => {
         });
     }
 
+    // Video List Renderer & Video File Management
     function renderVideoList() {
+        const videoList = document.getElementById("video-list");
         if (!videoList) return;
         videoList.innerHTML = "";
-        uploadedFiles.forEach((file) => {
+
+        if (uploadedFiles.length === 0) {
+            videoList.innerHTML = `<div style="font-size:12px; color:var(--text-secondary); text-align:center; padding:8px;">No video files selected yet. Drag & drop or click Browse.</div>`;
+            return;
+        }
+
+        let totalBytes = 0;
+        uploadedFiles.forEach((file, index) => {
+            totalBytes += file.size || 0;
             const item = document.createElement("div");
             item.className = "media-item";
+            item.style.cssText = "display:flex; justify-content:space-between; align-items:center; background:rgba(255,255,255,0.05); padding:8px 12px; border-radius:8px; margin-top:6px;";
             item.innerHTML = `
-                <span class="media-item-name">📹 ${file.name}</span>
-                <span class="media-item-tag">${(file.size / (1024 * 1024)).toFixed(1)} MB</span>
+                <div style="display:flex; align-items:center; gap:8px; overflow:hidden;">
+                    <span style="font-size:16px;">📹</span>
+                    <div style="overflow:hidden;">
+                        <div style="font-size:13px; font-weight:600; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:220px;">${file.name}</div>
+                        <div style="font-size:11px; color:var(--text-secondary);">${(file.size / (1024 * 1024)).toFixed(1)} MB</div>
+                    </div>
+                </div>
+                <button type="button" style="background:rgba(239,68,68,0.2); color:#ef4444; border:none; padding:4px 8px; border-radius:6px; cursor:pointer; font-weight:bold; font-size:12px;" onclick="removeUploadedVideo(${index})">✕</button>
             `;
             videoList.appendChild(item);
         });
+
+        // Add Clear All button header if files exist
+        const summaryBar = document.createElement("div");
+        summaryBar.style.cssText = "display:flex; justify-content:space-between; align-items:center; margin-top:10px; font-size:12px; color:var(--text-secondary);";
+        summaryBar.innerHTML = `
+            <span>Selected <strong>${uploadedFiles.length} file(s)</strong> (${(totalBytes / (1024 * 1024)).toFixed(1)} MB)</span>
+            <button type="button" style="background:none; border:none; color:var(--accent-pink); cursor:pointer; font-size:12px; text-decoration:underline;" onclick="clearAllVideos()">Clear All</button>
+        `;
+        videoList.appendChild(summaryBar);
+    }
+
+    function removeUploadedVideo(index) {
+        if (index >= 0 && index < uploadedFiles.length) {
+            uploadedFiles.splice(index, 1);
+            renderVideoList();
+            analyzeUploadedFootage();
+        }
+    }
+
+    function clearAllVideos() {
+        uploadedFiles = [];
+        renderVideoList();
+        const rawDurationBadge = document.getElementById("raw-total-duration-badge");
+        if (rawDurationBadge) rawDurationBadge.innerText = "Total Upload: --";
+        const copilotRideType = document.getElementById("copilot-ride-type");
+        if (copilotRideType) copilotRideType.innerText = "Upload footage to trigger real-time AI ride analysis & smart suggestions";
+        const applyBtn = document.getElementById("apply-ai-btn");
+        if (applyBtn) applyBtn.disabled = true;
     }
 
     // Custom Music File Upload
