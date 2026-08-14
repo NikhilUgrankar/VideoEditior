@@ -2,10 +2,10 @@ import os
 import sys
 from setup_ffmpeg import ensure_ffmpeg
 from engine import VideoAnalyzer, BeatDetector, AutoComposer, FFmpegRenderer
-from sample_media.generate_samples import generate_synthwave_sample_beat, generate_sample_bike_video
+from sample_media.generate_samples import generate_audio_genre, generate_sample_bike_video
 
 def run_test():
-    print("=== Auto-Edit Bike Video Studio End-to-End Test ===")
+    print("=== Auto-Edit Bike Video Studio v2.0 End-to-End Test ===")
     
     ffmpeg_exe, ffprobe_exe = ensure_ffmpeg()
     print(f"FFmpeg binary: {ffmpeg_exe}")
@@ -15,7 +15,7 @@ def run_test():
     sample_video = os.path.join("sample_media", "sample_bike_ride_1.mp4")
     
     if not os.path.exists(sample_audio):
-        generate_synthwave_sample_beat(sample_audio, duration_sec=20)
+        generate_audio_genre(sample_audio, genre="synthwave", duration_sec=20)
     if not os.path.exists(sample_video):
         generate_sample_bike_video(sample_video, duration_sec=10)
 

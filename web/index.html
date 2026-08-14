@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Auto-Edit Bike Video Studio | AI Moto Vlog Editor</title>
+    <title>Auto-Edit Bike Video Studio | Moto-Edit Pro 2.0</title>
     <link rel="stylesheet" href="style.css">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -18,182 +18,240 @@
                     <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="m15 10 4.553-2.276A1 1 0 0 1 21 8.618v6.764a1 1 0 0 1-1.447.894L15 14M5 18h8a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2v8a2 2 0 0 0 2 2z"/></svg>
                 </div>
                 <div class="brand-text">
-                    <h1>MOTO-EDIT <span class="badge-ai">PRO AI</span></h1>
-                    <p>Automated Cinematic Bike Ride Video Editor</p>
+                    <h1>MOTO-EDIT <span class="badge-ai">PRO 2.0</span></h1>
+                    <p>GoPro & Insta360 Style AI Bike Video Editor</p>
                 </div>
             </div>
 
+            <!-- Editor View Switcher Tabs -->
+            <nav class="nav-tabs">
+                <button class="nav-tab active" id="tab-auto-btn" onclick="switchTab('auto')">
+                    🪄 AI Auto-Edit Studio
+                </button>
+                <button class="nav-tab" id="tab-manual-btn" onclick="switchTab('manual')">
+                    🎬 Interactive Timeline Studio (Manual Editor)
+                </button>
+            </nav>
+
             <div class="header-badges">
-                <span class="pill-badge"><span class="dot-live"></span> 60FPS Engine Active</span>
-                <span class="pill-badge">GoPro / Insta360 / iOS / Android</span>
-                <span class="pill-badge preset-tag">1080p & 4K Ready</span>
+                <span class="pill-badge"><span class="dot-live"></span> Ultrafast 60FPS</span>
+                <span class="pill-badge preset-tag">GoPro / Insta360 / iOS / Android</span>
             </div>
         </header>
 
-        <!-- Main Studio Grid -->
-        <main class="studio-grid">
-            <!-- Left Panel: Media Imports & Style Selection -->
-            <section class="panel-left">
-                <!-- Media Import Box -->
-                <div class="card import-card">
-                    <div class="card-header">
-                        <h2><span class="step-num">1</span> Import Raw Footage & Music</h2>
-                    </div>
+        <!-- VIEW 1: AI Auto Edit Studio -->
+        <div id="view-auto" class="tab-view active">
+            <main class="studio-grid">
+                <!-- Left Panel: Media Imports & Style Selection -->
+                <section class="panel-left">
+                    <div class="card import-card">
+                        <div class="card-header">
+                            <h2><span class="step-num">1</span> Import Raw Footage & Music</h2>
+                        </div>
 
-                    <!-- Video Upload Dropzone -->
-                    <div class="dropzone" id="video-dropzone">
-                        <input type="file" id="video-file-input" multiple accept="video/*,.mp4,.mov,.hevc,.insv" hidden>
-                        <div class="dropzone-content">
-                            <div class="drop-icon">
-                                <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M17 8l-5-5-5 5M12 3v12"/></svg>
+                        <!-- Video Upload Dropzone -->
+                        <div class="dropzone" id="video-dropzone">
+                            <input type="file" id="video-file-input" multiple accept="video/*,.mp4,.mov,.hevc,.insv" hidden>
+                            <div class="dropzone-content">
+                                <div class="drop-icon">
+                                    <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M17 8l-5-5-5 5M12 3v12"/></svg>
+                                </div>
+                                <h3>Drag & Drop Raw Bike Videos</h3>
+                                <p>Supports MP4, MOV, HEVC, GoPro & Insta360 multi-minute footage</p>
+                                <button class="btn-secondary" onclick="document.getElementById('video-file-input').click()">Browse Video Files</button>
                             </div>
-                            <h3>Drag & Drop Raw Bike Videos</h3>
-                            <p>Supports MP4, MOV, HEVC, GoPro & Insta360 clips</p>
-                            <button class="btn-secondary" onclick="document.getElementById('video-file-input').click()">Browse Video Files</button>
+                        </div>
+
+                        <!-- Uploaded Videos List -->
+                        <div class="media-list" id="video-list"></div>
+
+                        <!-- Output Length Selector (Insta360 Style) -->
+                        <div class="music-selector">
+                            <div class="duration-header">
+                                <label class="input-label">Output Edit Length</label>
+                                <span class="raw-total-badge" id="raw-total-duration-badge">Total Upload: --</span>
+                            </div>
+                            <select id="target-duration-select" class="select-input">
+                                <option value="full" selected>🔥 Full Length Match (100% Sum of Raw Videos e.g. 13+ mins)</option>
+                                <option value="300">⏱️ 5 Minutes (Full Highway Ride)</option>
+                                <option value="180">⏱️ 3 Minutes (Mini Vlog Edit)</option>
+                                <option value="60">⏱️ 60 Seconds (Full Social Cut)</option>
+                                <option value="30">⏱️ 30 Seconds (Instagram Reel)</option>
+                                <option value="15">⏱️ 15 Seconds (YouTube Short)</option>
+                                <option value="auto">✨ Auto Best Highlights (AI Smart Length)</option>
+                            </select>
+                        </div>
+
+                        <!-- Music Selection & Custom Upload -->
+                        <div class="music-selector">
+                            <label class="input-label">Background Music & Audio Track</label>
+                            <div class="music-input-group">
+                                <select id="sample-music-select" class="select-input">
+                                    <option value="sample" selected>⚡ Synthwave Action Beat (128 BPM)</option>
+                                    <option value="rock">🏍️ Heavy Moto Rock / Metal (140 BPM)</option>
+                                    <option value="lofi">🎧 Highway Lo-Fi Chill Beat (90 BPM)</option>
+                                    <option value="cinematic">🌌 Cinematic Epic Ambient (110 BPM)</option>
+                                    <option value="edm">💥 EDM Bass Drop Beat (130 BPM)</option>
+                                </select>
+                            </div>
+
+                            <div class="custom-music-upload-box">
+                                <input type="file" id="custom-music-input" accept="audio/*,.mp3,.wav,.m4a,.flac" hidden>
+                                <button class="btn-secondary btn-small-upload" onclick="document.getElementById('custom-music-input').click()">
+                                    🎵 Upload Custom Song from Device (.MP3 / .WAV / .M4A)
+                                </button>
+                                <div id="custom-music-filename-badge" class="custom-song-badge" hidden>
+                                    <span>Selected: <strong id="custom-song-name">--</strong></span>
+                                </div>
+                            </div>
                         </div>
                     </div>
 
-                    <!-- Uploaded Videos List -->
-                    <div class="media-list" id="video-list">
+                    <!-- Preset Styles -->
+                    <div class="card style-card">
+                        <div class="card-header">
+                            <h2><span class="step-num">2</span> Select Editing Preset</h2>
+                        </div>
+
+                        <div class="preset-grid">
+                            <div class="preset-card active" data-preset="adrenaline">
+                                <div class="preset-icon">🏎️</div>
+                                <div class="preset-info">
+                                    <h3>Adrenaline MotoVlog</h3>
+                                    <p>Aggressive beat-sync, turn slow-mo drops, engine rev bursts</p>
+                                </div>
+                            </div>
+
+                            <div class="preset-card" data-preset="scenic_cruise">
+                                <div class="preset-icon">🌄</div>
+                                <div class="preset-info">
+                                    <h3>Scenic Highway</h3>
+                                    <p>Smooth crossfades, golden hour tone, sweeping curves</p>
+                                </div>
+                            </div>
+
+                            <div class="preset-card" data-preset="shorts_beat">
+                                <div class="preset-icon">⚡</div>
+                                <div class="preset-info">
+                                    <h3>YouTube Shorts / Reels</h3>
+                                    <p>Vertical 9:16 crop, fast 1.2s beat cuts, viral hook</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Right Panel: Export Settings & Preview Player -->
+                <section class="panel-right">
+                    <div class="card settings-card">
+                        <div class="card-header">
+                            <h2><span class="step-num">3</span> Color LUT & Audio Mix Controls</h2>
+                        </div>
+
+                        <div class="settings-grid">
+                            <div class="form-group">
+                                <label>Export Resolution</label>
+                                <select id="resolution-select" class="select-input">
+                                    <option value="1080p" selected>1080p 60FPS (Ultrafast Render)</option>
+                                    <option value="4k">4K 60FPS (Ultra HD Quality)</option>
+                                </select>
+                            </div>
+
+                            <div class="form-group">
+                                <label>Aspect Ratio</label>
+                                <select id="aspect-select" class="select-input">
+                                    <option value="16:9" selected>16:9 Widescreen (YouTube Standard)</option>
+                                    <option value="2.35:1">2.35:1 Anamorphic Cinema Letterbox</option>
+                                    <option value="9:16">9:16 Vertical (Shorts / Instagram Reels)</option>
+                                </select>
+                            </div>
+
+                            <div class="form-group">
+                                <label>Cinematic Color LUT</label>
+                                <select id="lut-select" class="select-input">
+                                    <option value="teal_orange" selected>🎬 Teal & Orange (Hollywood Action)</option>
+                                    <option value="dark_moto">🦇 Dark Moto (Stealth / High Contrast)</option>
+                                    <option value="sunset_glow">🌅 Golden Sunset (Warm Glow)</option>
+                                    <option value="crisp_hdr">🏔️ Vivid GoPro HDR (High Saturation)</option>
+                                    <option value="vintage_road">🎞️ Retro 70s Roadtrip</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <!-- Audio Volume Mix Sliders -->
+                        <div class="audio-mix-container">
+                            <div class="slider-row">
+                                <label>Raw Engine Mic Audio Volume: <span id="engine-vol-val">50%</span></label>
+                                <input type="range" id="engine-vol-range" min="0" max="1" step="0.05" value="0.5" class="range-slider">
+                            </div>
+                            <div class="slider-row">
+                                <label>Background Music Volume: <span id="music-vol-val">80%</span></label>
+                                <input type="range" id="music-vol-range" min="0" max="1" step="0.05" value="0.8" class="range-slider">
+                            </div>
+                        </div>
+
+                        <div class="action-bar">
+                            <button id="render-btn" class="btn-primary">
+                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+                                Generate Cinematic Video
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Video Preview Container -->
+                    <div class="card preview-card">
+                        <div class="card-header">
+                            <h2><span class="step-num">4</span> Master Output Video</h2>
+                        </div>
+
+                        <div class="video-container" id="video-container">
+                            <div class="placeholder-player" id="placeholder-player">
+                                <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><polygon points="23 7 16 12 23 17 23 7"/><rect x="1" y="5" width="15" height="14" rx="2" ry="2"/></svg>
+                                <p>Ready to render. Upload footage and click <strong>Generate Cinematic Video</strong>.</p>
+                            </div>
+                            <video id="output-video-player" controls hidden></video>
+                        </div>
+
+                        <div class="export-download-bar" id="export-bar" hidden>
+                            <a id="download-link" href="#" download="cinematic_bike_edit.mp4" class="btn-success">
+                                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg>
+                                Download YouTube Ready MP4
+                            </a>
+                            <span class="export-meta" id="export-meta-text">Rendered: 1080p 60FPS</span>
+                        </div>
+                    </div>
+                </section>
+            </main>
+        </div>
+
+        <!-- VIEW 2: Interactive Timeline Studio (Manual Editor Tab) -->
+        <div id="view-manual" class="tab-view" hidden>
+            <main class="manual-grid">
+                <div class="card manual-card">
+                    <div class="card-header manual-header-row">
+                        <div>
+                            <h2>🎬 Manual Clip & Timeline Studio</h2>
+                            <p>Drag, trim, adjust speed ramps, pick transitions, and customize every clip segment.</p>
+                        </div>
+                        <button id="add-clip-btn" class="btn-secondary">+ Add Clip Segment</button>
+                    </div>
+
+                    <!-- Interactive Timeline Sequence Container -->
+                    <div class="timeline-sequence-list" id="timeline-sequence-list">
                         <!-- Populated dynamically via JS -->
                     </div>
 
-                    <!-- Output Length Selector (Insta360 Style) -->
-                    <div class="music-selector">
-                        <div class="duration-header">
-                            <label class="input-label">Output Edit Length</label>
-                            <span class="raw-total-badge" id="raw-total-duration-badge">Total Upload: --</span>
-                        </div>
-                        <select id="target-duration-select" class="select-input">
-                            <option value="auto" selected>✨ Auto Best Highlights (AI Smart Length)</option>
-                            <option value="15">⏱️ 15 Seconds (YouTube Short / Reel)</option>
-                            <option value="30">⏱️ 30 Seconds (Social Edit)</option>
-                            <option value="60">⏱️ 60 Seconds (Full MotoVlog)</option>
-                            <option value="full">🔥 Full Length Match (100% Sum of Raw Footage)</option>
-                        </select>
-                    </div>
-
-                    <!-- Music Upload / Selector -->
-                    <div class="music-selector">
-                        <label class="input-label">Background Beat Track (AI Recommender)</label>
-                        <div class="music-input-group">
-                            <select id="sample-music-select" class="select-input">
-                                <option value="sample">🎵 Royalty-Free Synthwave Action Beat (128 BPM)</option>
-                                <option value="lofi">🎧 Highway Lo-Fi Chill Beat (95 BPM)</option>
-                                <option value="rock">🎸 Hard Rock Engine Roar Beat (140 BPM)</option>
-                                <option value="custom">📤 Upload Custom MP3 / WAV Track...</option>
-                            </select>
-                            <input type="file" id="custom-music-input" accept="audio/*,.mp3,.wav,.m4a" hidden>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Style Presets Card -->
-                <div class="card style-card">
-                    <div class="card-header">
-                        <h2><span class="step-num">2</span> Select Editing Preset</h2>
-                    </div>
-
-                    <div class="preset-grid">
-                        <div class="preset-card active" data-preset="adrenaline">
-                            <div class="preset-icon">🏎️</div>
-                            <div class="preset-info">
-                                <h3>Adrenaline MotoVlog</h3>
-                                <p>Aggressive beat-sync, turn slow-mo drops, engine rev bursts</p>
-                            </div>
-                        </div>
-
-                        <div class="preset-card" data-preset="scenic_cruise">
-                            <div class="preset-icon">🌄</div>
-                            <div class="preset-info">
-                                <h3>Scenic Highway</h3>
-                                <p>Smooth crossfades, golden hour tone, sweeping curves</p>
-                            </div>
-                        </div>
-
-                        <div class="preset-card" data-preset="shorts_beat">
-                            <div class="preset-icon">⚡</div>
-                            <div class="preset-info">
-                                <h3>YouTube Shorts / Reels</h3>
-                                <p>Vertical 9:16 crop, fast 1.2s beat cuts, viral hook</p>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </section>
-
-            <!-- Right Panel: Export Configurations & Live Visualizer -->
-            <section class="panel-right">
-                <!-- Render Settings Card -->
-                <div class="card settings-card">
-                    <div class="card-header">
-                        <h2><span class="step-num">3</span> Color LUT & FX Settings</h2>
-                    </div>
-
-                    <div class="settings-grid">
-                        <div class="form-group">
-                            <label>Export Resolution</label>
-                            <select id="resolution-select" class="select-input">
-                                <option value="1080p" selected>1080p 60FPS (Fast Render)</option>
-                                <option value="4k">4K 60FPS (Ultra HD Quality)</option>
-                            </select>
-                        </div>
-
-                        <div class="form-group">
-                            <label>Aspect Ratio</label>
-                            <select id="aspect-select" class="select-input">
-                                <option value="16:9" selected>16:9 Widescreen (YouTube Standard)</option>
-                                <option value="2.35:1">2.35:1 Anamorphic Cinema Letterbox</option>
-                                <option value="9:16">9:16 Vertical (Shorts / Instagram Reels)</option>
-                            </select>
-                        </div>
-
-                        <div class="form-group">
-                            <label>Cinematic Color LUT</label>
-                            <select id="lut-select" class="select-input">
-                                <option value="teal_orange" selected>🎬 Teal & Orange (Hollywood Action)</option>
-                                <option value="dark_moto">🦇 Dark Moto (Stealth / High Contrast)</option>
-                                <option value="sunset_glow">🌅 Golden Sunset (Warm Glow)</option>
-                                <option value="crisp_hdr">🏔️ Vivid GoPro HDR (High Saturation)</option>
-                                <option value="vintage_road">🎞️ Retro 70s Roadtrip</option>
-                            </select>
-                        </div>
-                    </div>
-
-                    <div class="action-bar">
-                        <button id="render-btn" class="btn-primary">
+                    <div class="action-bar manual-action-bar">
+                        <button id="render-manual-btn" class="btn-primary">
                             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polygon points="5 3 19 12 5 21 5 3"/></svg>
-                            Generate Cinematic Video
+                            Render Manual Timeline Edit
                         </button>
                     </div>
                 </div>
+            </main>
+        </div>
 
-                <!-- Preview Player Card -->
-                <div class="card preview-card">
-                    <div class="card-header">
-                        <h2><span class="step-num">4</span> Master Output Video</h2>
-                    </div>
-
-                    <div class="video-container" id="video-container">
-                        <div class="placeholder-player" id="placeholder-player">
-                            <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><polygon points="23 7 16 12 23 17 23 7"/><rect x="1" y="5" width="15" height="14" rx="2" ry="2"/></svg>
-                            <p>Ready to render. Upload footage and click <strong>Generate Cinematic Video</strong>.</p>
-                        </div>
-                        <video id="output-video-player" controls hidden></video>
-                    </div>
-
-                    <div class="export-download-bar" id="export-bar" hidden>
-                        <a id="download-link" href="#" download="cinematic_bike_edit.mp4" class="btn-success">
-                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg>
-                            Download YouTube Ready MP4
-                        </a>
-                        <span class="export-meta" id="export-meta-text">Rendered in 1080p 60FPS</span>
-                    </div>
-                </div>
-            </section>
-        </main>
-
-        <!-- Progress Modal overlay during video compilation -->
+        <!-- Progress Modal -->
         <div class="modal-backdrop" id="progress-modal" hidden>
             <div class="modal-box">
                 <div class="modal-header">

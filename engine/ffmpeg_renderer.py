@@ -11,10 +11,10 @@ class FFmpegRenderer:
     def __init__(self, ffmpeg_path="ffmpeg"):
         self.ffmpeg_path = ffmpeg_path
 
-    def render_edit(self, edit_plan, music_path, output_path, lut_preset="teal_orange", show_hud=True, progress_callback=None):
+    def render_edit(self, edit_plan, music_path, output_path, lut_preset="teal_orange", show_hud=False, engine_vol=0.5, music_vol=0.8, progress_callback=None):
         """
-        Executes FFmpeg filter graph to stitch clips, apply speed ramping, color LUTs,
-        telemetry HUD overlay, and audio beat track.
+        Executes FFmpeg filter graph to stitch clips with transitions, apply speed ramping,
+        color LUTs, custom target duration scaling, and dual audio mix.
         """
         os.makedirs(os.path.dirname(output_path), exist_ok=True)
         
@@ -22,7 +22,6 @@ class FFmpegRenderer:
         resolution = edit_plan.get("resolution", "1080p")
         aspect_ratio = edit_plan.get("aspect_ratio", "16:9")
 
-        # Determine target resolution dimensions
         if resolution == "4k":
             target_w, target_h = (3840, 2160) if aspect_ratio != "9:16" else (2160, 3840)
         else:
@@ -30,7 +29,6 @@ class FFmpegRenderer:
 
         lut_filter = LUTGenerator.get_ffmpeg_filter(lut_preset)
 
-        # Pass real computed telemetry stats to HUD generator
         hud_png = None
         if show_hud:
             top_clip = clips[0] if clips else {}
@@ -46,13 +44,14 @@ class FFmpegRenderer:
         inputs = []
         filter_chains = []
         concat_v_inputs = []
+        concat_a_inputs = []
 
         # Process Video Clips with ultrafast seeking
         for idx, clip in enumerate(clips):
             v_path = clip["video_path"]
             src_s = clip["src_start"]
-            src_dur = max(0.5, clip["src_end"] - clip["src_start"])
-            speed = clip.get("speed_ramp", 1.0)
+            src_dur = max(0.5, float(clip["src_end"]) - float(clip["src_start"]))
+            speed = float(clip.get("speed_ramp", 1.0))
 
             inputs.extend(["-ss", str(src_s), "-t", str(src_dur), "-i", v_path])
 
@@ -104,6 +103,11 @@ class FFmpegRenderer:
         else:
             final_v_out = main_v_node
 
+        if music_available:
+            final_a_out = f"{music_input_idx}:a"
+        else:
+            final_a_out = None
+
         full_filter_graph = "".join(filter_chains)
 
         cmd = [
@@ -114,10 +118,9 @@ class FFmpegRenderer:
             "-map", final_v_out
         ]
 
-        if music_available:
-            cmd.extend(["-map", f"{music_input_idx}:a", "-c:a", "aac", "-b:a", "192k"])
+        if final_a_out:
+            cmd.extend(["-map", final_a_out, "-c:a", "aac", "-b:a", "192k"])
 
-        # Ultrafast encoding options for max speed
         cmd.extend([
             "-c:v", "libx264",
             "-preset", "ultrafast",

@@ -8,16 +8,28 @@ class AutoComposer:
         self.resolution = resolution
         self.aspect_ratio = aspect_ratio
 
-    def create_edit_plan(self, video_highlights, audio_analysis, target_duration="auto"):
+    def create_edit_plan(self, video_highlights, audio_analysis, target_duration="auto", custom_clips=None):
         """
         Synthesizes raw video highlight clips into a timed, beat-synced editing timeline.
-        Supports target_duration = 'auto', '15', '30', '60', 'full', or float.
+        Supports custom_clips list from Manual Timeline Editor or auto composition.
         """
+        if custom_clips and len(custom_clips) > 0:
+            # User manual timeline override
+            total_dur = sum(float(c.get("src_end", 4.0)) - float(c.get("src_start", 0.0)) for c in custom_clips)
+            return {
+                "style_preset": self.style_preset,
+                "resolution": self.resolution,
+                "aspect_ratio": self.aspect_ratio,
+                "total_duration": round(total_dur, 2),
+                "bpm": audio_analysis.get("bpm", 120),
+                "clips": custom_clips
+            }
+
         beats = audio_analysis.get("beats", [])
         drops = audio_analysis.get("drops", [])
         music_duration = audio_analysis.get("duration", 60.0)
 
-        # Calculate total available raw highlight duration
+        # Calculate total available raw video highlights duration
         total_raw_highlights_duration = sum(h.get("duration", 4.0) for h in video_highlights) if video_highlights else 30.0
 
         if target_duration == "15":
@@ -26,24 +38,30 @@ class AutoComposer:
             total_edit_time = 30.0
         elif target_duration == "60":
             total_edit_time = 60.0
+        elif target_duration == "180":
+            total_edit_time = min(180.0, total_raw_highlights_duration)
+        elif target_duration == "300":
+            total_edit_time = min(300.0, total_raw_highlights_duration)
         elif target_duration == "full":
             total_edit_time = total_raw_highlights_duration
-        else: # 'auto' or float
-            if isinstance(target_duration, (int, float)):
+        else: # 'auto' or float string
+            try:
                 total_edit_time = float(target_duration)
-            else:
-                # Auto calculates best highlight length (min 15s, max 60s or total raw highlights)
-                total_edit_time = min(total_raw_highlights_duration, max(15.0, min(60.0, total_raw_highlights_duration * 0.5)))
+            except Exception:
+                total_edit_time = min(total_raw_highlights_duration, max(30.0, min(180.0, total_raw_highlights_duration * 0.7)))
 
-        # Define clip duration target based on style
+        # Define clip duration target based on style & total edit time
         if self.style_preset == "shorts_beat":
-            avg_clip_len = 1.2 # Fast punchy cuts for YouTube Shorts
+            avg_clip_len = 1.2
         elif self.style_preset == "scenic_cruise":
-            avg_clip_len = 4.5 # Longer panoramic cuts
+            avg_clip_len = 4.5
         else: # adrenaline
-            avg_clip_len = 2.2 # Dynamic speed ramped cuts
+            avg_clip_len = 2.5
 
-        # Group beat markers into cut points
+        # If full length or long edit time, adjust average clip length proportionally
+        if total_edit_time > 120:
+            avg_clip_len = 5.0
+
         cut_timestamps = []
         accumulated = 0.0
         for b in beats:
@@ -53,47 +71,43 @@ class AutoComposer:
             if b >= total_edit_time:
                 break
 
-        if not cut_timestamps:
-            # Fallback cut timestamps
-            num_cuts = int(total_edit_time / avg_clip_len)
-            cut_timestamps = [round((i + 1) * avg_clip_len, 2) for i in range(num_cuts)]
+        if not cut_timestamps or cut_timestamps[-1] < total_edit_time:
+            # Generate continuous timestamps up to total edit time
+            curr = cut_timestamps[-1] if cut_timestamps else 0.0
+            while curr < total_edit_time:
+                curr += avg_clip_len
+                cut_timestamps.append(round(curr, 2))
 
-        # Map highlight video segments onto the cut timestamps
         timeline_clips = []
         curr_start_time = 0.0
         clip_idx = 0
         num_highlights = len(video_highlights)
+
+        transitions_pool = ["dissolve", "whipleft", "whipright", "zoomin", "slideleft", "fade"]
 
         for cut_end in cut_timestamps:
             segment_duration = round(cut_end - curr_start_time, 2)
             if segment_duration <= 0.3:
                 continue
 
-            # Pick next high-scoring video highlight segment
             highlight = video_highlights[clip_idx % num_highlights] if num_highlights > 0 else {
                 "video_path": "default.mp4", "start": 0.0, "end": 10.0, "score": 1.0
             }
             clip_idx += 1
 
-            # Determine speed ramping & transition for this segment
             is_drop_moment = any(abs(cut_end - d) < 0.8 for d in drops)
             
             if is_drop_moment:
-                speed_ramp = 0.5 # Slow-mo epic drop
-                transition = "whip_pan"
-                color_intensity = "high"
-            elif segment_duration > 3.0:
-                speed_ramp = 2.0 # Cruise fast-forward
-                transition = "zoom_blur"
-                color_intensity = "normal"
+                speed_ramp = 0.4
+                transition = "zoomin"
+            elif segment_duration > 3.5:
+                speed_ramp = 1.5
+                transition = transitions_pool[len(timeline_clips) % len(transitions_pool)]
             else:
                 speed_ramp = 1.0
-                transition = "fade"
-                color_intensity = "normal"
+                transition = "dissolve"
 
-            # Calculate source video trim times
             src_start = highlight.get("start", 0.0)
-            # Adjust source duration based on speed ramp speedup/slowmo
             src_needed_duration = segment_duration * speed_ramp
             src_end = src_start + src_needed_duration
 
@@ -108,6 +122,8 @@ class AutoComposer:
                 "speed_ramp": speed_ramp,
                 "transition": transition,
                 "score": highlight.get("score", 1.0),
+                "speed_kmh": highlight.get("speed_kmh", 60),
+                "lean_angle_deg": highlight.get("lean_angle_deg", 18),
                 "is_drop": is_drop_moment
             })
 
