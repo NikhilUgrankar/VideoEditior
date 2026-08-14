@@ -1,13 +1,8 @@
 import numpy as np
+from engine.ml_analyzer import MLVideoAnalyzer
 
 class AutoComposer:
-    """CapCut & Filmora Style AI Edit Composer & Velocity Curve Engine."""
-
-    VELOCITY_CURVES = {
-        "adrenaline": {"speed_apex": 0.25, "speed_straight": 2.0, "speed_normal": 1.0, "label": "Montage Pulse Ramping (0.25x -> 2.0x)"},
-        "scenic_cruise": {"speed_apex": 0.50, "speed_straight": 1.5, "speed_normal": 1.0, "label": "Cinematic Flow (0.50x -> 1.5x)"},
-        "shorts_beat": {"speed_apex": 0.20, "speed_straight": 2.5, "speed_normal": 1.0, "label": "Reel Hero Drop (0.20x -> 2.5x)"}
-    }
+    """CapCut & Filmora Style Intelligent Hybrid Scene Composer & Precision Budget Engine."""
 
     def __init__(self, style_preset="adrenaline", resolution="1080p", aspect_ratio="16:9"):
         self.preset = style_preset
@@ -20,13 +15,12 @@ class AutoComposer:
 
     @staticmethod
     def create_edit_plan(highlights, audio_beats, preset="adrenaline", target_duration="auto", total_raw_duration=60.0):
-        """Builds precision beat-synced edit plan matching exact target duration to within +-0.5s."""
+        """Builds precision hybrid edit plan dynamically alternating between Normal Riding & Cinematic Peaks."""
 
-        curve_profile = AutoComposer.VELOCITY_CURVES.get(preset, AutoComposer.VELOCITY_CURVES["adrenaline"])
         beats = audio_beats.get("beats", [])
         bpm = audio_beats.get("bpm", 128.0)
 
-        # 1. Determine Exact Target Output Duration (T_target)
+        # 1. Determine Target Output Duration Budget (T_target)
         raw_dur = max(10.0, float(total_raw_duration))
         if target_duration == "full":
             t_target = raw_dur
@@ -44,7 +38,6 @@ class AutoComposer:
             except Exception:
                 t_target = min(120.0, raw_dur * 0.5)
 
-        # 2. Rank raw video highlights by motion score & corner apex lean angle
         if not highlights:
             highlights = [{
                 "video_path": "sample_media/sample_bike_ride_1.mp4",
@@ -56,18 +49,16 @@ class AutoComposer:
                 "lean_angle_deg": 22
             }]
 
-        sorted_hl = sorted(highlights, key=lambda x: x.get("score", 0.5), reverse=True)
-
-        # 3. Calculate clip output allocations matching T_target budget exactly
-        num_clips = max(1, min(len(sorted_hl), max(3, int(t_target / 3.0))))
-        selected_hl = sorted_hl[:num_clips]
+        num_clips = max(1, min(len(highlights), max(4, int(t_target / 3.0))))
+        selected_hl = highlights[:num_clips]
 
         scores = [max(0.1, h.get("score", 0.5)) for h in selected_hl]
         score_sum = sum(scores)
         
         timeline_clips = []
-        transitions_pool = ["zoomin", "whipleft", "whipright", "slideleft", "dissolve"]
         current_output_time = 0.0
+        cinematic_scenes_count = 0
+        normal_scenes_count = 0
 
         for idx, hl in enumerate(selected_hl):
             if current_output_time >= t_target:
@@ -79,24 +70,23 @@ class AutoComposer:
 
             speed_kmh = hl.get("speed_kmh", 60)
             lean_angle = hl.get("lean_angle_deg", 18)
+            motion_score = hl.get("score", 0.5)
 
-            # CapCut / VN Velocity Curve selection
-            if lean_angle > 24 or speed_kmh > 100:
-                speed_ramp = curve_profile["speed_apex"] # 0.25x Slow-Mo
-                transition = "zoomin"
-                ramp_label = "Parabolic Apex Slow-Mo (0.25x)"
-            elif speed_kmh > 75:
-                speed_ramp = curve_profile["speed_straight"] # 2.0x Fast Burst
-                transition = transitions_pool[idx % len(transitions_pool)]
-                ramp_label = "Straightaway Burst (2.0x)"
+            # ML Intelligent Hybrid Scene Classification (Normal vs Cinematic)
+            scene_class = MLVideoAnalyzer.classify_scene_mode(speed_kmh, lean_angle, motion_score)
+            
+            if scene_class["mode"] == "cinematic":
+                cinematic_scenes_count += 1
             else:
-                speed_ramp = curve_profile["speed_normal"] # 1.0x Pacing
-                transition = "dissolve"
-                ramp_label = "Linear Pacing (1.0x)"
+                normal_scenes_count += 1
+
+            speed_ramp = scene_class["speed_ramp"]
+            transition = scene_class["transition"]
+            engine_vol = scene_class["engine_vol"]
+            music_vol = scene_class["music_vol"]
 
             # Exact Speed Ramp Allocation Equation: T_source_trim = T_allocated_output * speed_ramp
             needed_source_duration = allocated_clip_output * speed_ramp
-            
             src_start = hl.get("start", 0.0)
             src_end = src_start + needed_source_duration
 
@@ -118,7 +108,10 @@ class AutoComposer:
                 "src_end": round(src_end, 2),
                 "speed_ramp": speed_ramp,
                 "transition": transition,
-                "ramp_label": ramp_label,
+                "scene_mode": scene_class["mode"],
+                "scene_label": scene_class["label"],
+                "engine_vol": engine_vol,
+                "music_vol": music_vol,
                 "speed_kmh": speed_kmh,
                 "lean_angle_deg": lean_angle,
                 "output_duration": round(allocated_clip_output, 2)
@@ -130,7 +123,9 @@ class AutoComposer:
             "preset": preset,
             "target_duration_sec": round(t_target, 1),
             "planned_duration_sec": round(current_output_time, 1),
-            "velocity_profile": curve_profile["label"],
+            "cinematic_scenes": cinematic_scenes_count,
+            "normal_scenes": normal_scenes_count,
+            "hybrid_breakdown": f"Hybrid Editing: {normal_scenes_count} Normal Ride Scenes / {cinematic_scenes_count} Cinematic Slow-Mo Peaks",
             "bpm": bpm,
             "clips": timeline_clips
         }
