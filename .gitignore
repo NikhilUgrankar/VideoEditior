@@ -1,0 +1,17 @@
+# Ignore compiled binaries downloaded by setup_ffmpeg.py
+bin/
+
+# Ignore user uploads and exports
+uploads/
+exports/*.mp4
+exports/temp_*
+
+# Ignore Python cache & temporary files
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.pytest_cache/
+.venv/
+env/
+venv/
