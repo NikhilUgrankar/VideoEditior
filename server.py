@@ -96,8 +96,8 @@ def process_render_job(job_id: str, video_paths: List[str], music_path: str, pre
 
 @app.post("/api/render")
 async def start_render(
-    videos: Optional[List[UploadFile]] = File(None),
-    music: Optional[UploadFile] = File(None),
+    videos: List[UploadFile] = File(default=[]),
+    music: Optional[UploadFile] = File(default=None),
     preset: str = Form("adrenaline"),
     resolution: str = Form("1080p"),
     aspect_ratio: str = Form("16:9"),
@@ -110,17 +110,19 @@ async def start_render(
 
     saved_video_paths = []
     
-    if videos and len(videos) > 0 and videos[0].filename != "":
+    if videos and len(videos) > 0:
         for v in videos:
-            v_path = os.path.join(job_dir, v.filename)
-            with open(v_path, "wb") as f:
-                shutil.copyfileobj(v.file, f)
-            saved_video_paths.append(v_path)
-    else:
+            if v.filename:
+                v_path = os.path.join(job_dir, v.filename)
+                with open(v_path, "wb") as f:
+                    shutil.copyfileobj(v.file, f)
+                saved_video_paths.append(v_path)
+    
+    if not saved_video_paths:
         # Fallback to built-in sample bike ride video
         saved_video_paths.append(SAMPLE_VIDEO)
 
-    if music and music.filename != "":
+    if music and music.filename:
         music_path = os.path.join(job_dir, music.filename)
         with open(music_path, "wb") as f:
             shutil.copyfileobj(music.file, f)

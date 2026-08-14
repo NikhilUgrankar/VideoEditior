@@ -99,12 +99,12 @@ document.addEventListener("DOMContentLoaded", () => {
     renderBtn.addEventListener("click", async () => {
         progressModal.hidden = false;
         progressFill.style.width = "5%";
-        statusText.innerText = "Uploading raw footage to Python AI Engine...";
+        statusText.innerText = "Initializing video engine...";
         pctText.innerText = "5%";
 
         const formData = new FormData();
         
-        // Append video files
+        // Append video files if present
         if (uploadedFiles.length > 0) {
             for (let f of uploadedFiles) {
                 formData.append("videos", f);
@@ -129,7 +129,8 @@ document.addEventListener("DOMContentLoaded", () => {
             });
 
             if (!response.ok) {
-                throw new Error("Render job failed to initialize");
+                const errData = await response.json().catch(() => ({}));
+                throw new Error(errData.detail || errData.error || `HTTP ${response.status}`);
             }
 
             const data = await response.json();
@@ -139,7 +140,7 @@ document.addEventListener("DOMContentLoaded", () => {
             pollStatus(jobId);
 
         } catch (err) {
-            alert("Render Error: " + err.message);
+            alert("Render Initialization Error: " + err.message);
             progressModal.hidden = true;
         }
     });
@@ -148,11 +149,14 @@ document.addEventListener("DOMContentLoaded", () => {
         const interval = setInterval(async () => {
             try {
                 const res = await fetch(`/api/status/${jobId}`);
+                if (!res.ok) return;
+
                 const data = await res.json();
 
-                progressFill.style.width = `${data.progress}%`;
-                statusText.innerText = data.status_message;
-                pctText.innerText = `${data.progress}%`;
+                const currentProgress = Math.max(5, Math.min(100, data.progress || 5));
+                progressFill.style.width = `${currentProgress}%`;
+                statusText.innerText = data.status_message || "Processing...";
+                pctText.innerText = `${Math.round(currentProgress)}%`;
 
                 if (data.status === "completed") {
                     clearInterval(interval);
@@ -170,11 +174,11 @@ document.addEventListener("DOMContentLoaded", () => {
                 } else if (data.status === "failed") {
                     clearInterval(interval);
                     progressModal.hidden = true;
-                    alert("Rendering failed: " + data.error);
+                    alert("Rendering Error: " + (data.error || "Unknown server error"));
                 }
             } catch (e) {
-                console.error("Polling error:", e);
+                console.error("Polling status error:", e);
             }
-        }, 1000);
+        }, 800);
     }
 });
