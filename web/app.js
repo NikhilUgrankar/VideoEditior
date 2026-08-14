@@ -1,3 +1,21 @@
+// Moto-Edit Pro Studio 5.0 - Core Application Controller
+
+let uploadedFiles = [];
+let customMusicFile = null;
+let selectedPreset = "adrenaline";
+let selectedLUT = "teal_orange";
+let selectedMusicTrack = {
+    id: "sample",
+    title: "⚡ Synthwave Action Beat",
+    artist: "Creator Beats • 128 BPM",
+    genre: "Synthwave"
+};
+let manualClipsSequence = [];
+let currentlyPlayingTrackUrl = null;
+let currentMusicProvider = "jamendo";
+let audioCtx = null;
+let analyserNode = null;
+let animFrameId = null;
 let lastCopilotData = null;
 
 // Apply all AI Co-Pilot suggestions in 1 click
@@ -409,7 +427,10 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
     async function analyzeUploadedFootage() {
-        if (uploadedFiles.length === 0) return;
+        if (!uploadedFiles || uploadedFiles.length === 0) return;
+        const rawDurationBadge = document.getElementById("raw-total-duration-badge");
+        const targetDurationSelect = document.getElementById("target-duration-select");
+
         if (rawDurationBadge) rawDurationBadge.innerText = "Analyzing footage...";
 
         const formData = new FormData();
