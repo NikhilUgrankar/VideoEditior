@@ -11,6 +11,7 @@ import uvicorn
 from setup_ffmpeg import ensure_ffmpeg
 from engine import VideoAnalyzer, BeatDetector, AutoComposer, FFmpegRenderer
 from engine.pixabay_music import PixabayMusicClient
+from engine.jamendo_music import JamendoMusicClient, FreesoundClient
 from sample_media.generate_samples import generate_audio_genre, generate_sample_bike_video
 
 app = FastAPI(title="Auto-Edit Bike Video Studio API")
@@ -36,10 +37,20 @@ jobs_db = {}
 
 
 @app.get("/api/music/search")
-async def search_music(q: str = "", genre: str = ""):
-    """Returns trend-focused royalty-free audio tracks from Pixabay & Creator Library."""
-    tracks = PixabayMusicClient.search_music(query=q, genre=genre)
-    return {"tracks": tracks}
+async def search_music(q: str = "", genre: str = "", provider: str = "jamendo"):
+    """Multi-provider search across Jamendo API v3.0 (500k+ tracks), Pixabay, Freesound FX, and FMA."""
+    tracks = []
+    
+    if provider == "jamendo":
+        tracks = JamendoMusicClient.search_tracks(query=q, genre=genre)
+        if not tracks: # fallback to pixabay/curated if Jamendo returns empty
+            tracks = PixabayMusicClient.search_music(query=q, genre=genre)
+    elif provider == "freesound":
+        tracks = FreesoundClient.search_fx(query=q or "engine")
+    else:
+        tracks = PixabayMusicClient.search_music(query=q, genre=genre)
+
+    return {"tracks": tracks, "provider": provider}
 
 # Ensure sample files exist
 SAMPLE_BEAT = os.path.join(SAMPLE_DIR, "synthwave_beat.wav")

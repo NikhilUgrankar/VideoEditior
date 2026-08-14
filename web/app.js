@@ -291,15 +291,28 @@ document.addEventListener("DOMContentLoaded", () => {
         }, 800);
     }
 
-    // Pixabay Music Catalog Search
-    window.loadCreatorMusicCatalog = async function(query = "", genre = "") {
+    let currentMusicProvider = "jamendo";
+    let audioCtx = null;
+    let analyserNode = null;
+    let animFrameId = null;
+
+    window.selectMusicProvider = function(provider) {
+        currentMusicProvider = provider;
+        document.querySelectorAll(".provider-btn").forEach(b => b.classList.remove("active"));
+        const activeBtn = document.getElementById(`provider-${provider}-btn`);
+        if (activeBtn) activeBtn.classList.add("active");
+        loadCreatorMusicCatalog("", "", provider);
+    };
+
+    // Pixabay & Jamendo API Music Catalog Search
+    window.loadCreatorMusicCatalog = async function(query = "", genre = "", provider = currentMusicProvider) {
         const grid = document.getElementById("music-tracks-grid");
         grid.innerHTML = `<div style="grid-column: 1/-1; text-align:center; padding:30px; color:var(--text-secondary);">
-            Searching Pixabay & Creator Audio Catalog...
+            Fetching ${provider.toUpperCase()} music catalog...
         </div>`;
 
         try {
-            const res = await fetch(`/api/music/search?q=${encodeURIComponent(query)}&genre=${encodeURIComponent(genre)}`);
+            const res = await fetch(`/api/music/search?q=${encodeURIComponent(query)}&genre=${encodeURIComponent(genre)}&provider=${provider}`);
             const data = await res.json();
             
             grid.innerHTML = "";
@@ -313,7 +326,7 @@ document.addEventListener("DOMContentLoaded", () => {
                         <button class="btn-play-icon" onclick="playTrackPreview('${track.stream_url}', this)">▶</button>
                         <div class="track-meta">
                             <h4>${track.title}</h4>
-                            <p>${track.artist} • ${track.duration} | Genre: ${track.genre}</p>
+                            <p>${track.artist} • ${track.duration} | <span class="badge-genre">${track.provider || 'Jamendo CC'}</span></p>
                         </div>
                     </div>
                     <button class="btn-secondary btn-small" onclick="selectCreatorTrack('${track.id}', '${track.title}', '${track.artist}', '${track.genre}')">⚡ Use Track</button>
@@ -325,18 +338,18 @@ document.addEventListener("DOMContentLoaded", () => {
         }
     };
 
-    musicSearchBtn.addEventListener("click", () => {
-        loadCreatorMusicCatalog(musicSearchInput.value);
-    });
-
-    window.filterGenre = function(genre) {
-        document.querySelectorAll(".genre-chip").forEach(c => c.classList.remove("active"));
-        event.target.classList.add("active");
-        loadCreatorMusicCatalog("", genre);
-    };
-
     window.playTrackPreview = function(url, btn) {
         if (!url) return;
+        
+        if (!audioCtx) {
+            audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            analyserNode = audioCtx.createAnalyser();
+            const source = audioCtx.createMediaElementSource(globalPlayer);
+            source.connect(analyserNode);
+            analyserNode.connect(audioCtx.destination);
+            drawWaveform();
+        }
+
         if (currentlyPlayingTrackUrl === url && !globalPlayer.paused) {
             globalPlayer.pause();
             btn.innerText = "▶";
@@ -349,6 +362,37 @@ document.addEventListener("DOMContentLoaded", () => {
             currentlyPlayingTrackUrl = url;
         }
     };
+
+    function drawWaveform() {
+        const canvas = document.getElementById("waveform-canvas");
+        if (!canvas) return;
+        const ctx = canvas.getContext("2d");
+        const bufferLength = analyserNode.frequencyBinCount;
+        const dataArray = new Uint8Array(bufferLength);
+
+        function draw() {
+            animFrameId = requestAnimationFrame(draw);
+            analyserNode.getByteFrequencyData(dataArray);
+
+            ctx.fillStyle = "rgba(11, 15, 25, 0.4)";
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            const barWidth = (canvas.width / bufferLength) * 2.5;
+            let x = 0;
+
+            for (let i = 0; i < bufferLength; i++) {
+                const barHeight = (dataArray[i] / 255) * canvas.height;
+                const gradient = ctx.createLinearGradient(0, canvas.height, 0, 0);
+                gradient.addColorStop(0, "#0284c7");
+                gradient.addColorStop(1, "#0d9488");
+
+                ctx.fillStyle = gradient;
+                ctx.fillRect(x, canvas.height - barHeight, barWidth, barHeight);
+                x += barWidth + 1;
+            }
+        }
+        draw();
+    }
 
     window.selectCreatorTrack = function(id, title, artist, genre) {
         selectedMusicTrack = { id, title, artist, genre };

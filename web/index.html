@@ -264,20 +264,32 @@
             <main class="music-hub-grid">
                 <div class="card music-hub-card">
                     <div class="card-header">
-                        <h2>🎵 Creator Royalty-Free Music Hub (Pixabay API)</h2>
-                        <p>Search & stream trend-focused royalty-free audio tracks for YouTube Vlogs & Reels.</p>
+                        <h2>🎵 Multi-Source Royalty-Free Music Suite (Jamendo v3.0, Pixabay & Freesound)</h2>
+                        <p>Search over 500,000+ Creative Commons audio tracks, sound effects, and trend beats.</p>
+                    </div>
+
+                    <!-- Music Provider Selection Tabs -->
+                    <div class="provider-tabs-row">
+                        <button class="provider-btn active" id="provider-jamendo-btn" onclick="selectMusicProvider('jamendo')">🎵 Jamendo API (500,000+ Tracks)</button>
+                        <button class="provider-btn" id="provider-pixabay-btn" onclick="selectMusicProvider('pixabay')">⚡ Pixabay & Uppbeat Beats</button>
+                        <button class="provider-btn" id="provider-freesound-btn" onclick="selectMusicProvider('freesound')">🔊 Freesound FX & Engine Loops</button>
+                    </div>
+
+                    <!-- Waveform Spectrum Visualizer Canvas -->
+                    <div class="waveform-container">
+                        <canvas id="waveform-canvas" width="800" height="60"></canvas>
                     </div>
 
                     <!-- Search & Genre Chips -->
                     <div class="music-search-bar">
-                        <input type="text" id="music-search-input" class="select-input" placeholder="Search tracks by mood, title, genre (e.g. Action, Vlog Beat, Synthwave)...">
-                        <button id="music-search-btn" class="btn-secondary">Search Pixabay</button>
+                        <input type="text" id="music-search-input" class="select-input" placeholder="Search Jamendo 500k+ tracks by mood, title, genre (e.g. Rock, Vlog Beat, Synthwave)...">
+                        <button id="music-search-btn" class="btn-secondary">Search Music</button>
                     </div>
 
                     <div class="genre-chips-row">
                         <span class="genre-chip active" onclick="filterGenre('all')">🔥 All Genres</span>
-                        <span class="genre-chip" onclick="filterGenre('action')">⚡ Action Hype</span>
                         <span class="genre-chip" onclick="filterGenre('rock')">🏍️ Moto Rock</span>
+                        <span class="genre-chip" onclick="filterGenre('action')">⚡ Action Hype</span>
                         <span class="genre-chip" onclick="filterGenre('lofi')">🎧 Lo-Fi Chill</span>
                         <span class="genre-chip" onclick="filterGenre('cinematic')">🌌 Cinematic</span>
                         <span class="genre-chip" onclick="filterGenre('edm')">💥 EDM Bass</span>
