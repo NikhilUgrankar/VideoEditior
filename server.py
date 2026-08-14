@@ -2,6 +2,7 @@ import os
 import uuid
 import threading
 import shutil
+import json
 from typing import List, Optional
 from fastapi import FastAPI, UploadFile, File, Form, BackgroundTasks
 from fastapi.staticfiles import StaticFiles
