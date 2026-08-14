@@ -83,18 +83,18 @@
                             </div>
                         </div>
 
-                        <!-- Video Upload Dropzone (Native Overlay) -->
-                        <div class="dropzone" id="video-dropzone" style="position: relative; overflow: hidden;">
-                            <input type="file" id="video-file-input" multiple accept="video/*,.mp4,.mov,.hevc,.insv,.mkv,.avi,.3gp,.ts,.webm" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; opacity: 0; cursor: pointer; z-index: 10;">
-                            <div class="dropzone-content" style="pointer-events: none;">
+                        <!-- Video Upload Dropzone (HTML5 Label Native Target) -->
+                        <label class="dropzone" id="video-dropzone" for="video-file-input" style="display: block;">
+                            <input type="file" id="video-file-input" multiple accept="video/*,.mp4,.mov,.hevc,.insv,.mkv,.avi,.3gp,.ts,.webm" hidden>
+                            <div class="dropzone-content">
                                 <div class="drop-icon">
                                     <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M17 8l-5-5-5 5M12 3v12"/></svg>
                                 </div>
                                 <h3>Drag & Drop Raw Bike Videos</h3>
                                 <p>Supports MP4, MOV, HEVC, GoPro & Insta360 multi-minute footage</p>
-                                <button class="btn-secondary" id="browse-btn" type="button" style="pointer-events: none;">Browse Video Files</button>
+                                <span class="btn-secondary" style="pointer-events: none;">Browse Video Files</span>
                             </div>
-                        </div>
+                        </label>
 
                         <!-- Uploaded Videos List -->
                         <div class="media-list" id="video-list"></div>

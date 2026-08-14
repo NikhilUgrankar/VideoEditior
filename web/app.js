@@ -364,19 +364,23 @@ document.addEventListener("DOMContentLoaded", () => {
         });
     }
 
-    // Dropzone & Native Overlay handlers
+    // Dropzone & Video Input Event Handlers
     if (dropzone) {
         dropzone.addEventListener("dragover", (e) => {
             e.preventDefault();
+            e.stopPropagation();
             dropzone.classList.add("dragover");
         });
 
-        dropzone.addEventListener("dragleave", () => {
+        dropzone.addEventListener("dragleave", (e) => {
+            e.preventDefault();
+            e.stopPropagation();
             dropzone.classList.remove("dragover");
         });
 
         dropzone.addEventListener("drop", (e) => {
             e.preventDefault();
+            e.stopPropagation();
             dropzone.classList.remove("dragover");
             const files = e.dataTransfer ? e.dataTransfer.files : null;
             if (files && files.length) {
@@ -390,7 +394,7 @@ document.addEventListener("DOMContentLoaded", () => {
             const files = e.target.files;
             if (files && files.length) {
                 handleVideoFiles(files);
-                videoInput.value = ""; // Reset value for reliable re-selection
+                videoInput.value = ""; // Reset value so re-selecting same file works
             }
         });
     }
