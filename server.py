@@ -12,7 +12,9 @@ import uvicorn
 from setup_ffmpeg import ensure_ffmpeg
 from engine import VideoAnalyzer, BeatDetector, AutoComposer, FFmpegRenderer
 from engine.pixabay_music import PixabayMusicClient
-from engine.jamendo_music import JamendoMusicClient, FreesoundClient
+from engine.jamendo_music import JamendoMusicClient
+from engine.freesound_music import FreesoundClient
+from engine.ai_music_recommender import AIMusicRecommender
 from sample_media.generate_samples import generate_audio_genre, generate_sample_bike_video
 
 app = FastAPI(title="Auto-Edit Bike Video Studio API")
@@ -44,14 +46,21 @@ async def search_music(q: str = "", genre: str = "", provider: str = "jamendo"):
     
     if provider == "jamendo":
         tracks = JamendoMusicClient.search_tracks(query=q, genre=genre)
-        if not tracks: # fallback to pixabay/curated if Jamendo returns empty
+        if not tracks:
             tracks = PixabayMusicClient.search_music(query=q, genre=genre)
     elif provider == "freesound":
-        tracks = FreesoundClient.search_fx(query=q or "engine")
+        tracks = FreesoundClient.search_fx(query=q or genre or "engine motorcycle")
     else:
         tracks = PixabayMusicClient.search_music(query=q, genre=genre)
 
     return {"tracks": tracks, "provider": provider}
+
+
+@app.get("/api/ai/copilot")
+async def get_ai_copilot_suggestions(dur: float = 60.0):
+    """Returns AI Smart Co-Pilot suggestions for theme, LUT, duration, audio mix, and music."""
+    copilot = AIMusicRecommender.generate_copilot_suggestions(dur, [])
+    return copilot
 
 # Ensure sample files exist
 SAMPLE_BEAT = os.path.join(SAMPLE_DIR, "synthwave_beat.wav")
@@ -160,14 +169,15 @@ async def analyze_videos(videos: List[UploadFile] = File(default=[])):
         total_duration = 30.0
 
     ai_suggestions = analyzer.get_ai_smart_suggestions(total_duration, all_highlights)
-    ai_music_matches = JamendoMusicClient.search_tracks(genre=ai_suggestions["recommended_genre"])
+    copilot_suggestions = AIMusicRecommender.generate_copilot_suggestions(total_duration, all_highlights)
 
     return {
         "video_count": video_count,
         "total_raw_duration_sec": round(total_duration, 1),
         "total_raw_duration_formatted": ai_suggestions["total_raw_formatted"],
         "ai_suggestions": ai_suggestions,
-        "ai_music_matches": ai_music_matches,
+        "copilot": copilot_suggestions,
+        "ai_music_matches": copilot_suggestions.get("ai_tracks", []),
         "highlights": all_highlights[:12],
         "recommended_music": [
             {"id": "sample", "name": "⚡ Synthwave Action Beat (128 BPM)"},

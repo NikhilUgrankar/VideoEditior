@@ -1,21 +1,57 @@
-// Moto-Edit Pro Studio 3.2 - Core Application Controller
+let lastCopilotData = null;
 
-let uploadedFiles = [];
-let customMusicFile = null;
-let selectedPreset = "adrenaline";
-let selectedLUT = "teal_orange";
-let selectedMusicTrack = {
-    id: "sample",
-    title: "⚡ Synthwave Action Beat",
-    artist: "Creator Beats • 128 BPM",
-    genre: "Synthwave"
-};
-let manualClipsSequence = [];
-let currentlyPlayingTrackUrl = null;
-let currentMusicProvider = "jamendo";
-let audioCtx = null;
-let analyserNode = null;
-let animFrameId = null;
+// Apply all AI Co-Pilot suggestions in 1 click
+function applyAllAISuggestions() {
+    if (!lastCopilotData) return;
+    const c = lastCopilotData;
+
+    // 1. Apply Preset Theme
+    if (c.preset_theme && c.preset_theme.suggested) {
+        selectedPreset = c.preset_theme.suggested;
+        document.querySelectorAll(".preset-card").forEach(card => {
+            card.classList.toggle("active", card.dataset.preset === selectedPreset);
+        });
+    }
+
+    // 2. Apply Color LUT Profile
+    if (c.color_lut && c.color_lut.suggested) {
+        selectedLUT = c.color_lut.suggested;
+        const lutSelect = document.getElementById("lut-select");
+        if (lutSelect) lutSelect.value = selectedLUT;
+        document.querySelectorAll(".lut-swatch-card").forEach(card => {
+            const isMatch = card.getAttribute("onclick") && card.getAttribute("onclick").includes(selectedLUT);
+            card.classList.toggle("active", !!isMatch);
+        });
+    }
+
+    // 3. Apply Dual Audio Mix Ratio
+    if (c.audio_mix) {
+        const engineVolRange = document.getElementById("engine-vol-range");
+        const engineVolVal = document.getElementById("engine-vol-val");
+        const musicVolRange = document.getElementById("music-vol-range");
+        const musicVolVal = document.getElementById("music-vol-val");
+
+        if (engineVolRange) {
+            engineVolRange.value = c.audio_mix.engine_vol;
+            if (engineVolVal) engineVolVal.innerText = `${Math.round(c.audio_mix.engine_vol * 100)}%`;
+        }
+        if (musicVolRange) {
+            musicVolRange.value = c.audio_mix.music_vol;
+            if (musicVolVal) musicVolVal.innerText = `${Math.round(c.audio_mix.music_vol * 100)}%`;
+        }
+    }
+
+    // 4. Apply Target Duration
+    if (c.target_duration && c.target_duration.suggested) {
+        const targetDurationSelect = document.getElementById("target-duration-select");
+        if (targetDurationSelect) {
+            targetDurationSelect.value = c.target_duration.suggested;
+        }
+    }
+
+    // Visual Feedback Toast
+    alert("✨ AI Co-Pilot Suggestions Applied! Theme, Color LUT, Audio Mix, and Edit Duration configured.");
+}
 
 // Global Tab Switcher
 function switchTab(tabName) {
@@ -383,11 +419,30 @@ document.addEventListener("DOMContentLoaded", () => {
                 const data = await res.json();
                 if (rawDurationBadge) rawDurationBadge.innerText = `Total Upload: ${data.total_raw_duration_formatted}`;
 
+                const c = data.copilot;
+                if (c) {
+                    lastCopilotData = c;
+                    
+                    // Enable AI Apply button & update readout
+                    const applyBtn = document.getElementById("apply-ai-btn");
+                    const copilotRideType = document.getElementById("copilot-ride-type");
+                    const aiPresetText = document.getElementById("ai-preset-text");
+                    const aiLutText = document.getElementById("ai-lut-text");
+                    const aiAudioText = document.getElementById("ai-audio-text");
+                    const aiDurationText = document.getElementById("ai-duration-text");
+
+                    if (applyBtn) applyBtn.disabled = false;
+                    if (copilotRideType) copilotRideType.innerText = `AI Ride Classification: ${c.ride_type} (Peak ${c.max_speed_kmh} KM/H, ${c.max_lean_deg}° Lean)`;
+                    if (aiPresetText) aiPresetText.innerText = c.preset_theme.suggested.toUpperCase();
+                    if (aiLutText) aiLutText.innerText = c.color_lut.suggested.toUpperCase();
+                    if (aiAudioText) aiAudioText.innerText = `${Math.round(c.audio_mix.engine_vol*100)}% Mic / ${Math.round(c.audio_mix.music_vol*100)}% Music`;
+                    if (aiDurationText) aiDurationText.innerText = `${c.target_duration.suggested}s`;
+                }
+
                 const ai = data.ai_suggestions;
                 if (ai && ai.smart_durations) {
                     const totalSec = ai.total_raw_sec;
                     
-                    // Dynamically populate target duration dropdown based on total raw video length
                     targetDurationSelect.innerHTML = `
                         <option value="${ai.smart_durations.full.value}" selected>${ai.smart_durations.full.label}</option>
                         <option value="${ai.smart_durations.vlog.value}">${ai.smart_durations.vlog.label}</option>
@@ -396,7 +451,6 @@ document.addEventListener("DOMContentLoaded", () => {
                         <option value="custom">⏱️ Custom Time Range (Use Range Slider / Type Seconds)</option>
                     `;
 
-                    // Configure Custom Time Slider range (5s to totalSec)
                     const customSlider = document.getElementById("custom-time-slider");
                     const customSecInput = document.getElementById("custom-duration-seconds");
                     const customReadout = document.getElementById("custom-slider-readout");
@@ -410,7 +464,6 @@ document.addEventListener("DOMContentLoaded", () => {
                         if (customReadout) customReadout.innerText = formatDurationText(defaultCustom);
                     }
 
-                    // Update AI Match Genre Badge
                     const activeGenreBadge = document.getElementById("active-genre-badge");
                     if (activeGenreBadge) activeGenreBadge.innerText = ai.match_badge || "AI Matched";
                 }
