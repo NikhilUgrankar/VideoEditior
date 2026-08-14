@@ -10,6 +10,7 @@ import uvicorn
 
 from setup_ffmpeg import ensure_ffmpeg
 from engine import VideoAnalyzer, BeatDetector, AutoComposer, FFmpegRenderer
+from engine.pixabay_music import PixabayMusicClient
 from sample_media.generate_samples import generate_audio_genre, generate_sample_bike_video
 
 app = FastAPI(title="Auto-Edit Bike Video Studio API")
@@ -24,11 +25,21 @@ os.makedirs(UPLOADS_DIR, exist_ok=True)
 os.makedirs(EXPORTS_DIR, exist_ok=True)
 os.makedirs(SAMPLE_DIR, exist_ok=True)
 
+# Mount sample media directory statically for audio preview streaming
+app.mount("/sample_media", StaticFiles(directory=SAMPLE_DIR), name="sample_media")
+
 # Ensure FFmpeg is present
 FFMPEG_EXE, FFPROBE_EXE = ensure_ffmpeg()
 
 # Active Jobs state store
 jobs_db = {}
+
+
+@app.get("/api/music/search")
+async def search_music(q: str = "", genre: str = ""):
+    """Returns trend-focused royalty-free audio tracks from Pixabay & Creator Library."""
+    tracks = PixabayMusicClient.search_music(query=q, genre=genre)
+    return {"tracks": tracks}
 
 # Ensure sample files exist
 SAMPLE_BEAT = os.path.join(SAMPLE_DIR, "synthwave_beat.wav")

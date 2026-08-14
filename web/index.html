@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Auto-Edit Bike Video Studio | Moto-Edit Pro 2.0</title>
+    <title>Auto-Edit Bike Video Studio | Moto-Edit Studio Pro 3.0</title>
     <link rel="stylesheet" href="style.css">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -18,18 +18,24 @@
                     <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="m15 10 4.553-2.276A1 1 0 0 1 21 8.618v6.764a1 1 0 0 1-1.447.894L15 14M5 18h8a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2v8a2 2 0 0 0 2 2z"/></svg>
                 </div>
                 <div class="brand-text">
-                    <h1>MOTO-EDIT <span class="badge-ai">PRO 2.0</span></h1>
-                    <p>GoPro & Insta360 Style AI Bike Video Editor</p>
+                    <h1>MOTO-EDIT <span class="badge-ai">PRO 3.0</span></h1>
+                    <p>GoPro & Insta360 Desktop Studio Suite</p>
                 </div>
             </div>
 
-            <!-- Editor View Switcher Tabs -->
+            <!-- Workspace View Switcher Tabs -->
             <nav class="nav-tabs">
                 <button class="nav-tab active" id="tab-auto-btn" onclick="switchTab('auto')">
-                    🪄 AI Auto-Edit Studio
+                    🪄 AI Auto-Edit Wizard
                 </button>
                 <button class="nav-tab" id="tab-manual-btn" onclick="switchTab('manual')">
-                    🎬 Interactive Timeline Studio (Manual Editor)
+                    🎬 Timeline Studio
+                </button>
+                <button class="nav-tab" id="tab-music-btn" onclick="switchTab('music')">
+                    🎵 Creator Music Hub
+                </button>
+                <button class="nav-tab" id="tab-lut-btn" onclick="switchTab('lut')">
+                    🎨 Color LUT Gallery
                 </button>
             </nav>
 
@@ -42,7 +48,7 @@
         <!-- VIEW 1: AI Auto Edit Studio -->
         <div id="view-auto" class="tab-view active">
             <main class="studio-grid">
-                <!-- Left Panel: Media Imports & Style Selection -->
+                <!-- Left Panel: Media Imports & Music Selection -->
                 <section class="panel-left">
                     <div class="card import-card">
                         <div class="card-header">
@@ -82,23 +88,28 @@
                             </select>
                         </div>
 
-                        <!-- Music Selection & Custom Upload -->
+                        <!-- Selected Music Display & Quick Actions -->
                         <div class="music-selector">
-                            <label class="input-label">Background Music & Audio Track</label>
-                            <div class="music-input-group">
-                                <select id="sample-music-select" class="select-input">
-                                    <option value="sample" selected>⚡ Synthwave Action Beat (128 BPM)</option>
-                                    <option value="rock">🏍️ Heavy Moto Rock / Metal (140 BPM)</option>
-                                    <option value="lofi">🎧 Highway Lo-Fi Chill Beat (90 BPM)</option>
-                                    <option value="cinematic">🌌 Cinematic Epic Ambient (110 BPM)</option>
-                                    <option value="edm">💥 EDM Bass Drop Beat (130 BPM)</option>
-                                </select>
+                            <div class="duration-header">
+                                <label class="input-label">Background Beat Track</label>
+                                <span class="badge-genre" id="active-genre-badge">Synthwave</span>
+                            </div>
+
+                            <div class="selected-music-card" id="selected-music-card">
+                                <div class="music-track-details">
+                                    <div class="music-disc-icon">🎵</div>
+                                    <div>
+                                        <h4 id="active-track-title">⚡ Synthwave Action Beat</h4>
+                                        <p id="active-track-artist">Creator Beats • 128 BPM</p>
+                                    </div>
+                                </div>
+                                <button class="btn-secondary btn-small" onclick="switchTab('music')">Browse Music Library</button>
                             </div>
 
                             <div class="custom-music-upload-box">
                                 <input type="file" id="custom-music-input" accept="audio/*,.mp3,.wav,.m4a,.flac" hidden>
                                 <button class="btn-secondary btn-small-upload" onclick="document.getElementById('custom-music-input').click()">
-                                    🎵 Upload Custom Song from Device (.MP3 / .WAV / .M4A)
+                                    📤 Upload Custom Song from Device (.MP3 / .WAV / .M4A)
                                 </button>
                                 <div id="custom-music-filename-badge" class="custom-song-badge" hidden>
                                     <span>Selected: <strong id="custom-song-name">--</strong></span>
@@ -110,7 +121,7 @@
                     <!-- Preset Styles -->
                     <div class="card style-card">
                         <div class="card-header">
-                            <h2><span class="step-num">2</span> Select Editing Preset</h2>
+                            <h2><span class="step-num">2</span> Select Editing Theme</h2>
                         </div>
 
                         <div class="preset-grid">
@@ -141,7 +152,7 @@
                     </div>
                 </section>
 
-                <!-- Right Panel: Export Settings & Preview Player -->
+                <!-- Right Panel: Export Controls & Master Player -->
                 <section class="panel-right">
                     <div class="card settings-card">
                         <div class="card-header">
@@ -224,7 +235,7 @@
             </main>
         </div>
 
-        <!-- VIEW 2: Interactive Timeline Studio (Manual Editor Tab) -->
+        <!-- VIEW 2: Interactive Timeline Studio (Manual Editor) -->
         <div id="view-manual" class="tab-view" hidden>
             <main class="manual-grid">
                 <div class="card manual-card">
@@ -236,16 +247,97 @@
                         <button id="add-clip-btn" class="btn-secondary">+ Add Clip Segment</button>
                     </div>
 
-                    <!-- Interactive Timeline Sequence Container -->
-                    <div class="timeline-sequence-list" id="timeline-sequence-list">
-                        <!-- Populated dynamically via JS -->
-                    </div>
+                    <div class="timeline-sequence-list" id="timeline-sequence-list"></div>
 
                     <div class="action-bar manual-action-bar">
                         <button id="render-manual-btn" class="btn-primary">
                             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polygon points="5 3 19 12 5 21 5 3"/></svg>
                             Render Manual Timeline Edit
                         </button>
+                    </div>
+                </div>
+            </main>
+        </div>
+
+        <!-- VIEW 3: Creator Music Hub -->
+        <div id="view-music" class="tab-view" hidden>
+            <main class="music-hub-grid">
+                <div class="card music-hub-card">
+                    <div class="card-header">
+                        <h2>🎵 Creator Royalty-Free Music Hub (Pixabay API)</h2>
+                        <p>Search & stream trend-focused royalty-free audio tracks for YouTube Vlogs & Reels.</p>
+                    </div>
+
+                    <!-- Search & Genre Chips -->
+                    <div class="music-search-bar">
+                        <input type="text" id="music-search-input" class="select-input" placeholder="Search tracks by mood, title, genre (e.g. Action, Vlog Beat, Synthwave)...">
+                        <button id="music-search-btn" class="btn-secondary">Search Pixabay</button>
+                    </div>
+
+                    <div class="genre-chips-row">
+                        <span class="genre-chip active" onclick="filterGenre('all')">🔥 All Genres</span>
+                        <span class="genre-chip" onclick="filterGenre('action')">⚡ Action Hype</span>
+                        <span class="genre-chip" onclick="filterGenre('rock')">🏍️ Moto Rock</span>
+                        <span class="genre-chip" onclick="filterGenre('lofi')">🎧 Lo-Fi Chill</span>
+                        <span class="genre-chip" onclick="filterGenre('cinematic')">🌌 Cinematic</span>
+                        <span class="genre-chip" onclick="filterGenre('edm')">💥 EDM Bass</span>
+                    </div>
+
+                    <!-- Live Music Tracks Grid -->
+                    <div class="tracks-grid" id="music-tracks-grid"></div>
+                </div>
+            </main>
+        </div>
+
+        <!-- VIEW 4: Color LUT Gallery Studio -->
+        <div id="view-lut" class="tab-view" hidden>
+            <main class="lut-hub-grid">
+                <div class="card lut-hub-card">
+                    <div class="card-header">
+                        <h2>🎨 Visual Color LUT & Preset Gallery</h2>
+                        <p>Choose Hollywood-grade color profiles tailored for motorcycle & action sports videos.</p>
+                    </div>
+
+                    <div class="lut-gallery-grid">
+                        <div class="lut-swatch-card active" onclick="selectLUT('teal_orange')">
+                            <div class="lut-preview-frame lut-filter-teal-orange">
+                                <span class="lut-label">TEAL & ORANGE</span>
+                            </div>
+                            <h3>🎬 Teal & Orange (Hollywood Action)</h3>
+                            <p>Cool blue-green shadows paired with rich golden highlights.</p>
+                        </div>
+
+                        <div class="lut-swatch-card" onclick="selectLUT('dark_moto')">
+                            <div class="lut-preview-frame lut-filter-dark-moto">
+                                <span class="lut-label">DARK MOTO</span>
+                            </div>
+                            <h3>🦇 Dark Moto (Stealth / High Contrast)</h3>
+                            <p>Deep rich blacks and sharp metallic punch for night rides.</p>
+                        </div>
+
+                        <div class="lut-swatch-card" onclick="selectLUT('sunset_glow')">
+                            <div class="lut-preview-frame lut-filter-sunset-glow">
+                                <span class="lut-label">GOLDEN SUNSET</span>
+                            </div>
+                            <h3>🌅 Golden Sunset (Warm Glow)</h3>
+                            <p>Warm amber hues for golden hour scenic highway cruises.</p>
+                        </div>
+
+                        <div class="lut-swatch-card" onclick="selectLUT('crisp_hdr')">
+                            <div class="lut-preview-frame lut-filter-crisp-hdr">
+                                <span class="lut-label">VIVID GOPRO HDR</span>
+                            </div>
+                            <h3>🏔️ Vivid GoPro HDR (High Saturation)</h3>
+                            <p>Ultra-vibrant sky blues and lush greenery for daylight sports.</p>
+                        </div>
+
+                        <div class="lut-swatch-card" onclick="selectLUT('vintage_road')">
+                            <div class="lut-preview-frame lut-filter-vintage-road">
+                                <span class="lut-label">RETRO 70S ROADTRIP</span>
+                            </div>
+                            <h3>🎞️ Retro 70s Roadtrip</h3>
+                            <p>Nostalgic film look with soft warm shadows and film roll-off.</p>
+                        </div>
                     </div>
                 </div>
             </main>
@@ -268,6 +360,9 @@
             </div>
         </div>
     </div>
+
+    <!-- Hidden global audio element for live music preview streaming -->
+    <audio id="global-music-player" hidden></audio>
 
     <script src="app.js"></script>
 </body>

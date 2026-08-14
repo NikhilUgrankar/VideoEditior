@@ -1,25 +1,29 @@
 let uploadedFiles = [];
 let customMusicFile = null;
 let selectedPreset = "adrenaline";
+let selectedLUT = "teal_orange";
+let selectedMusicTrack = {
+    id: "sample",
+    title: "⚡ Synthwave Action Beat",
+    artist: "Creator Beats • 128 BPM",
+    genre: "Synthwave"
+};
 let manualClipsSequence = [];
+let currentlyPlayingTrackUrl = null;
 
 function switchTab(tabName) {
-    const viewAuto = document.getElementById("view-auto");
-    const viewManual = document.getElementById("view-manual");
-    const tabAutoBtn = document.getElementById("tab-auto-btn");
-    const tabManualBtn = document.getElementById("tab-manual-btn");
+    const tabs = ["auto", "manual", "music", "lut"];
+    tabs.forEach(t => {
+        const view = document.getElementById(`view-${t}`);
+        const btn = document.getElementById(`tab-${t}-btn`);
+        if (view) view.hidden = (t !== tabName);
+        if (btn) btn.classList.toggle("active", t === tabName);
+    });
 
     if (tabName === "manual") {
-        viewAuto.hidden = true;
-        viewManual.hidden = false;
-        tabAutoBtn.classList.remove("active");
-        tabManualBtn.classList.add("active");
         renderManualTimeline();
-    } else {
-        viewAuto.hidden = false;
-        viewManual.hidden = true;
-        tabAutoBtn.classList.add("active");
-        tabManualBtn.classList.remove("active");
+    } else if (tabName === "music") {
+        loadCreatorMusicCatalog();
     }
 }
 
@@ -35,6 +39,10 @@ document.addEventListener("DOMContentLoaded", () => {
     const customSongBadge = document.getElementById("custom-music-filename-badge");
     const customSongName = document.getElementById("custom-song-name");
     
+    const activeTrackTitle = document.getElementById("active-track-title");
+    const activeTrackArtist = document.getElementById("active-track-artist");
+    const activeGenreBadge = document.getElementById("active-genre-badge");
+
     const presetCards = document.querySelectorAll(".preset-card");
     const resolutionSelect = document.getElementById("resolution-select");
     const aspectSelect = document.getElementById("aspect-select");
@@ -49,6 +57,10 @@ document.addEventListener("DOMContentLoaded", () => {
     const renderManualBtn = document.getElementById("render-manual-btn");
     const addClipBtn = document.getElementById("add-clip-btn");
 
+    const musicSearchInput = document.getElementById("music-search-input");
+    const musicSearchBtn = document.getElementById("music-search-btn");
+    const globalPlayer = document.getElementById("global-music-player");
+
     const progressModal = document.getElementById("progress-modal");
     const progressFill = document.getElementById("modal-progress-fill");
     const statusText = document.getElementById("modal-status-text");
@@ -60,7 +72,7 @@ document.addEventListener("DOMContentLoaded", () => {
     const downloadLink = document.getElementById("download-link");
     const exportMetaText = document.getElementById("export-meta-text");
 
-    // Audio Mix Volume Slider listeners
+    // Audio Mix Volume Sliders
     engineVolRange.addEventListener("input", (e) => {
         engineVolVal.innerText = `${Math.round(e.target.value * 100)}%`;
     });
@@ -69,7 +81,7 @@ document.addEventListener("DOMContentLoaded", () => {
         musicVolVal.innerText = `${Math.round(e.target.value * 100)}%`;
     });
 
-    // File Drag & Drop handlers
+    // Dropzone logic
     dropzone.addEventListener("dragover", (e) => {
         e.preventDefault();
         dropzone.classList.add("dragover");
@@ -121,7 +133,6 @@ document.addEventListener("DOMContentLoaded", () => {
                 const data = await res.json();
                 rawDurationBadge.innerText = `Total Upload: ${data.total_raw_duration_formatted}`;
 
-                // Populate manual clips array for Interactive Timeline Editor
                 if (data.highlights && data.highlights.length > 0) {
                     manualClipsSequence = data.highlights.map((h, i) => ({
                         clip_id: i + 1,
@@ -144,7 +155,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
     function renderVideoList() {
         videoList.innerHTML = "";
-        uploadedFiles.forEach((file, index) => {
+        uploadedFiles.forEach((file) => {
             const item = document.createElement("div");
             item.className = "media-item";
             item.innerHTML = `
@@ -155,16 +166,21 @@ document.addEventListener("DOMContentLoaded", () => {
         });
     }
 
-    // Custom Audio File Picker Handler
+    // Custom Music File Upload
     customMusicInput.addEventListener("change", (e) => {
         if (e.target.files.length) {
             customMusicFile = e.target.files[0];
             customSongName.innerText = customMusicFile.name;
             customSongBadge.hidden = false;
+            
+            // Update Active Display
+            activeTrackTitle.innerText = `🎵 Custom: ${customMusicFile.name}`;
+            activeTrackArtist.innerText = "Device Audio Upload";
+            activeGenreBadge.innerText = "Custom File";
         }
     });
 
-    // Preset selection
+    // Preset Selection
     presetCards.forEach(card => {
         card.addEventListener("click", () => {
             presetCards.forEach(c => c.classList.remove("active"));
@@ -173,10 +189,16 @@ document.addEventListener("DOMContentLoaded", () => {
         });
     });
 
-    // Render Button trigger (AI Auto-Edit)
-    renderBtn.addEventListener("click", () => triggerRender(false));
+    // Dropdown sample music select listener
+    sampleMusicSelect.addEventListener("change", (e) => {
+        const val = e.target.value;
+        const text = e.target.options[e.target.selectedIndex].text;
+        activeTrackTitle.innerText = text;
+        selectedMusicTrack.id = val;
+    });
 
-    // Render Manual Button trigger
+    // Render Actions
+    renderBtn.addEventListener("click", () => triggerRender(false));
     renderManualBtn.addEventListener("click", () => triggerRender(true));
 
     async function triggerRender(isManualMode) {
@@ -197,12 +219,12 @@ document.addEventListener("DOMContentLoaded", () => {
             formData.append("music", customMusicFile);
         }
 
-        formData.append("music_genre", sampleMusicSelect.value);
+        formData.append("music_genre", selectedMusicTrack.id);
         formData.append("preset", selectedPreset);
         formData.append("target_duration", targetDurationSelect.value);
         formData.append("resolution", resolutionSelect.value);
         formData.append("aspect_ratio", aspectSelect.value);
-        formData.append("lut_preset", lutSelect.value);
+        formData.append("lut_preset", lutSelect.value || selectedLUT);
         formData.append("engine_vol", engineVolRange.value);
         formData.append("music_vol", musicVolRange.value);
         formData.append("show_hud", false);
@@ -257,7 +279,6 @@ document.addEventListener("DOMContentLoaded", () => {
                     downloadLink.href = data.output_url;
                     exportMetaText.innerText = `Rendered: ${data.resolution.toUpperCase()} 60FPS | ${data.aspect_ratio}`;
                     
-                    // Auto switch to auto tab if rendering manual edit
                     switchTab('auto');
                 } else if (data.status === "failed") {
                     clearInterval(interval);
@@ -265,12 +286,88 @@ document.addEventListener("DOMContentLoaded", () => {
                     alert("Rendering Error: " + (data.error || "Unknown server error"));
                 }
             } catch (e) {
-                console.error("Polling status error:", e);
+                console.error("Polling error:", e);
             }
         }, 800);
     }
 
-    // Manual Timeline Editor Rendering
+    // Pixabay Music Catalog Search
+    window.loadCreatorMusicCatalog = async function(query = "", genre = "") {
+        const grid = document.getElementById("music-tracks-grid");
+        grid.innerHTML = `<div style="grid-column: 1/-1; text-align:center; padding:30px; color:var(--text-secondary);">
+            Searching Pixabay & Creator Audio Catalog...
+        </div>`;
+
+        try {
+            const res = await fetch(`/api/music/search?q=${encodeURIComponent(query)}&genre=${encodeURIComponent(genre)}`);
+            const data = await res.json();
+            
+            grid.innerHTML = "";
+            const tracks = data.tracks || [];
+
+            tracks.forEach(track => {
+                const card = document.createElement("div");
+                card.className = "track-card";
+                card.innerHTML = `
+                    <div class="track-info">
+                        <button class="btn-play-icon" onclick="playTrackPreview('${track.stream_url}', this)">▶</button>
+                        <div class="track-meta">
+                            <h4>${track.title}</h4>
+                            <p>${track.artist} • ${track.duration} | Genre: ${track.genre}</p>
+                        </div>
+                    </div>
+                    <button class="btn-secondary btn-small" onclick="selectCreatorTrack('${track.id}', '${track.title}', '${track.artist}', '${track.genre}')">⚡ Use Track</button>
+                `;
+                grid.appendChild(card);
+            });
+        } catch (e) {
+            console.error("Music fetch error:", e);
+        }
+    };
+
+    musicSearchBtn.addEventListener("click", () => {
+        loadCreatorMusicCatalog(musicSearchInput.value);
+    });
+
+    window.filterGenre = function(genre) {
+        document.querySelectorAll(".genre-chip").forEach(c => c.classList.remove("active"));
+        event.target.classList.add("active");
+        loadCreatorMusicCatalog("", genre);
+    };
+
+    window.playTrackPreview = function(url, btn) {
+        if (!url) return;
+        if (currentlyPlayingTrackUrl === url && !globalPlayer.paused) {
+            globalPlayer.pause();
+            btn.innerText = "▶";
+            currentlyPlayingTrackUrl = null;
+        } else {
+            document.querySelectorAll(".btn-play-icon").forEach(b => b.innerText = "▶");
+            globalPlayer.src = url;
+            globalPlayer.play();
+            btn.innerText = "⏸";
+            currentlyPlayingTrackUrl = url;
+        }
+    };
+
+    window.selectCreatorTrack = function(id, title, artist, genre) {
+        selectedMusicTrack = { id, title, artist, genre };
+        activeTrackTitle.innerText = title;
+        activeTrackArtist.innerText = artist;
+        activeGenreBadge.innerText = genre;
+        switchTab('auto');
+    };
+
+    // Color LUT Visual Swatches Selector
+    window.selectLUT = function(lutKey) {
+        selectedLUT = lutKey;
+        lutSelect.value = lutKey;
+        document.querySelectorAll(".lut-swatch-card").forEach(c => c.classList.remove("active"));
+        event.currentTarget.classList.add("active");
+        switchTab('auto');
+    };
+
+    // Manual Timeline Editor Render
     window.renderManualTimeline = function() {
         const list = document.getElementById("timeline-sequence-list");
         list.innerHTML = "";
