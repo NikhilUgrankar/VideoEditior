@@ -186,3 +186,47 @@ class VideoAnalyzer:
         # Return segments ordered by timeline start time to ensure 100% full duration coverage
         segments.sort(key=lambda x: x["start"])
         return segments
+
+    def get_ai_smart_suggestions(self, total_duration_sec, highlights):
+        """Generates adaptive AI duration choices scaled to raw video length & AI ride style classification."""
+        dur = max(10.0, float(total_duration_sec))
+        
+        # Calculate AI Smart Output Length Options
+        full_sec = round(dur, 1)
+        vlog_sec = round(dur * 0.5, 1)
+        highlights_sec = round(dur * 0.35, 1)
+        reel_sec = round(min(90.0, max(15.0, dur * 0.1)), 1)
+
+        def format_t(sec):
+            m = int(sec // 60)
+            s = int(sec % 60)
+            return f"{m}m {s}s" if m > 0 else f"{s}s"
+
+        avg_score = float(np.mean([h.get("score", 0.5) for h in highlights])) if highlights else 0.5
+
+        if avg_score > 0.15:
+            ride_style = "High-Speed Adrenaline Track/Highway"
+            recommended_genre = "rock"
+            match_badge = "⚡ 98% AI Match for Adrenaline Ride"
+        elif avg_score > 0.05:
+            ride_style = "Scenic Mountain / Highway Cruise"
+            recommended_genre = "cinematic"
+            match_badge = "🌄 95% AI Match for Scenic Cruise"
+        else:
+            ride_style = "Chill City / Sunset Ride"
+            recommended_genre = "lofi"
+            match_badge = "🎧 92% AI Match for Chill Ride"
+
+        return {
+            "total_raw_sec": full_sec,
+            "total_raw_formatted": format_t(full_sec),
+            "ride_style": ride_style,
+            "recommended_genre": recommended_genre,
+            "match_badge": match_badge,
+            "smart_durations": {
+                "full": {"value": str(full_sec), "label": f"🔥 AI Full Length Cut (100% - {format_t(full_sec)})"},
+                "vlog": {"value": str(vlog_sec), "label": f"🎬 AI YouTube Vlog Cut (50% - {format_t(vlog_sec)})"},
+                "highlights": {"value": str(highlights_sec), "label": f"⚡ AI Peak Motion Cut (35% - {format_t(highlights_sec)})"},
+                "reel": {"value": str(reel_sec), "label": f"📱 AI Social Reel Cut (10% - {format_t(reel_sec)})"}
+            }
+        }

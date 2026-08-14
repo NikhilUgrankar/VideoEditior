@@ -383,6 +383,38 @@ document.addEventListener("DOMContentLoaded", () => {
                 const data = await res.json();
                 if (rawDurationBadge) rawDurationBadge.innerText = `Total Upload: ${data.total_raw_duration_formatted}`;
 
+                const ai = data.ai_suggestions;
+                if (ai && ai.smart_durations) {
+                    const totalSec = ai.total_raw_sec;
+                    
+                    // Dynamically populate target duration dropdown based on total raw video length
+                    targetDurationSelect.innerHTML = `
+                        <option value="${ai.smart_durations.full.value}" selected>${ai.smart_durations.full.label}</option>
+                        <option value="${ai.smart_durations.vlog.value}">${ai.smart_durations.vlog.label}</option>
+                        <option value="${ai.smart_durations.highlights.value}">${ai.smart_durations.highlights.label}</option>
+                        <option value="${ai.smart_durations.reel.value}">${ai.smart_durations.reel.label}</option>
+                        <option value="custom">⏱️ Custom Time Range (Use Range Slider / Type Seconds)</option>
+                    `;
+
+                    // Configure Custom Time Slider range (5s to totalSec)
+                    const customSlider = document.getElementById("custom-time-slider");
+                    const customSecInput = document.getElementById("custom-duration-seconds");
+                    const customReadout = document.getElementById("custom-slider-readout");
+
+                    if (customSlider) {
+                        customSlider.min = 5;
+                        customSlider.max = Math.round(totalSec);
+                        const defaultCustom = Math.round(totalSec * 0.5);
+                        customSlider.value = defaultCustom;
+                        if (customSecInput) customSecInput.value = defaultCustom;
+                        if (customReadout) customReadout.innerText = formatDurationText(defaultCustom);
+                    }
+
+                    // Update AI Match Genre Badge
+                    const activeGenreBadge = document.getElementById("active-genre-badge");
+                    if (activeGenreBadge) activeGenreBadge.innerText = ai.match_badge || "AI Matched";
+                }
+
                 if (data.highlights && data.highlights.length > 0) {
                     manualClipsSequence = data.highlights.map((h, i) => ({
                         clip_id: i + 1,
@@ -401,6 +433,34 @@ document.addEventListener("DOMContentLoaded", () => {
             console.error("Analysis error:", e);
             if (rawDurationBadge) rawDurationBadge.innerText = "Total Upload: Calculated";
         }
+    }
+
+    function formatDurationText(sec) {
+        sec = parseFloat(sec) || 0;
+        const m = Math.floor(sec / 60);
+        const s = Math.floor(sec % 60);
+        return m > 0 ? `${m}m ${s}s (${sec}s)` : `${s}s (${sec}s)`;
+    }
+
+    // Range Slider & Numeric Input Bidirectional Sync
+    const customSlider = document.getElementById("custom-time-slider");
+    const customSecInput = document.getElementById("custom-duration-seconds");
+    const customReadout = document.getElementById("custom-slider-readout");
+
+    if (customSlider) {
+        customSlider.addEventListener("input", (e) => {
+            const val = e.target.value;
+            if (customSecInput) customSecInput.value = val;
+            if (customReadout) customReadout.innerText = formatDurationText(val);
+        });
+    }
+
+    if (customSecInput) {
+        customSecInput.addEventListener("input", (e) => {
+            const val = e.target.value;
+            if (customSlider) customSlider.value = val;
+            if (customReadout) customReadout.innerText = formatDurationText(val);
+        });
     }
 
     function renderVideoList() {

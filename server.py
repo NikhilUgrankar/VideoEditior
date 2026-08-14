@@ -159,12 +159,15 @@ async def analyze_videos(videos: List[UploadFile] = File(default=[])):
     if total_duration <= 0:
         total_duration = 30.0
 
-    formatted_time = f"{int(total_duration // 60)}m {int(total_duration % 60)}s" if total_duration >= 60 else f"{int(total_duration)}s"
+    ai_suggestions = analyzer.get_ai_smart_suggestions(total_duration, all_highlights)
+    ai_music_matches = JamendoMusicClient.search_tracks(genre=ai_suggestions["recommended_genre"])
 
     return {
         "video_count": video_count,
         "total_raw_duration_sec": round(total_duration, 1),
-        "total_raw_duration_formatted": formatted_time,
+        "total_raw_duration_formatted": ai_suggestions["total_raw_formatted"],
+        "ai_suggestions": ai_suggestions,
+        "ai_music_matches": ai_music_matches,
         "highlights": all_highlights[:12],
         "recommended_music": [
             {"id": "sample", "name": "⚡ Synthwave Action Beat (128 BPM)"},
