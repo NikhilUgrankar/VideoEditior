@@ -10,6 +10,10 @@ let selectedMusicTrack = {
 };
 let manualClipsSequence = [];
 let currentlyPlayingTrackUrl = null;
+let currentMusicProvider = "jamendo";
+let audioCtx = null;
+let analyserNode = null;
+let animFrameId = null;
 
 function switchTab(tabName) {
     const tabs = ["auto", "manual", "music", "lut"];
@@ -34,7 +38,9 @@ document.addEventListener("DOMContentLoaded", () => {
     
     const rawDurationBadge = document.getElementById("raw-total-duration-badge");
     const targetDurationSelect = document.getElementById("target-duration-select");
-    const sampleMusicSelect = document.getElementById("sample-music-select");
+    const customDurationBox = document.getElementById("custom-duration-input-box");
+    const customDurationSeconds = document.getElementById("custom-duration-seconds");
+
     const customMusicInput = document.getElementById("custom-music-input");
     const customSongBadge = document.getElementById("custom-music-filename-badge");
     const customSongName = document.getElementById("custom-song-name");
@@ -71,6 +77,18 @@ document.addEventListener("DOMContentLoaded", () => {
     const exportBar = document.getElementById("export-bar");
     const downloadLink = document.getElementById("download-link");
     const exportMetaText = document.getElementById("export-meta-text");
+
+    // Immediately load Creator Music Catalog on app startup
+    loadCreatorMusicCatalog();
+
+    // Target Duration custom toggle handler
+    targetDurationSelect.addEventListener("change", (e) => {
+        if (e.target.value === "custom") {
+            customDurationBox.hidden = false;
+        } else {
+            customDurationBox.hidden = true;
+        }
+    });
 
     // Audio Mix Volume Sliders
     engineVolRange.addEventListener("input", (e) => {
@@ -189,13 +207,17 @@ document.addEventListener("DOMContentLoaded", () => {
         });
     });
 
-    // Dropdown sample music select listener
-    sampleMusicSelect.addEventListener("change", (e) => {
-        const val = e.target.value;
-        const text = e.target.options[e.target.selectedIndex].text;
-        activeTrackTitle.innerText = text;
-        selectedMusicTrack.id = val;
+    // LUT Select dropdown sync
+    lutSelect.addEventListener("change", (e) => {
+        selectedLUT = e.target.value;
     });
+
+    // Music Search Button Listener
+    if (musicSearchBtn) {
+        musicSearchBtn.addEventListener("click", () => {
+            loadCreatorMusicCatalog(musicSearchInput.value);
+        });
+    }
 
     // Render Actions
     renderBtn.addEventListener("click", () => triggerRender(false));
@@ -219,12 +241,18 @@ document.addEventListener("DOMContentLoaded", () => {
             formData.append("music", customMusicFile);
         }
 
+        // Custom Duration calculation
+        let durationVal = targetDurationSelect.value;
+        if (durationVal === "custom" && customDurationSeconds) {
+            durationVal = customDurationSeconds.value || "120";
+        }
+
         formData.append("music_genre", selectedMusicTrack.id);
         formData.append("preset", selectedPreset);
-        formData.append("target_duration", targetDurationSelect.value);
+        formData.append("target_duration", durationVal);
         formData.append("resolution", resolutionSelect.value);
         formData.append("aspect_ratio", aspectSelect.value);
-        formData.append("lut_preset", lutSelect.value || selectedLUT);
+        formData.append("lut_preset", selectedLUT || lutSelect.value);
         formData.append("engine_vol", engineVolRange.value);
         formData.append("music_vol", musicVolRange.value);
         formData.append("show_hud", false);
@@ -291,11 +319,6 @@ document.addEventListener("DOMContentLoaded", () => {
         }, 800);
     }
 
-    let currentMusicProvider = "jamendo";
-    let audioCtx = null;
-    let analyserNode = null;
-    let animFrameId = null;
-
     window.selectMusicProvider = function(provider) {
         currentMusicProvider = provider;
         document.querySelectorAll(".provider-btn").forEach(b => b.classList.remove("active"));
@@ -307,6 +330,8 @@ document.addEventListener("DOMContentLoaded", () => {
     // Pixabay & Jamendo API Music Catalog Search
     window.loadCreatorMusicCatalog = async function(query = "", genre = "", provider = currentMusicProvider) {
         const grid = document.getElementById("music-tracks-grid");
+        if (!grid) return;
+        
         grid.innerHTML = `<div style="grid-column: 1/-1; text-align:center; padding:30px; color:var(--text-secondary);">
             Fetching ${provider.toUpperCase()} music catalog...
         </div>`;
@@ -317,6 +342,13 @@ document.addEventListener("DOMContentLoaded", () => {
             
             grid.innerHTML = "";
             const tracks = data.tracks || [];
+
+            if (tracks.length === 0) {
+                grid.innerHTML = `<div style="grid-column: 1/-1; text-align:center; padding:30px; color:var(--text-secondary);">
+                    No tracks found. Select another genre or provider.
+                </div>`;
+                return;
+            }
 
             tracks.forEach(track => {
                 const card = document.createElement("div");
@@ -329,43 +361,60 @@ document.addEventListener("DOMContentLoaded", () => {
                             <p>${track.artist} • ${track.duration} | <span class="badge-genre">${track.provider || 'Jamendo CC'}</span></p>
                         </div>
                     </div>
-                    <button class="btn-secondary btn-small" onclick="selectCreatorTrack('${track.id}', '${track.title}', '${track.artist}', '${track.genre}')">⚡ Use Track</button>
+                    <button class="btn-secondary btn-small" onclick="selectCreatorTrack('${track.id}', '${track.title.replace(/'/g, "\\'")}', '${track.artist.replace(/'/g, "\\'")}', '${track.genre}')">⚡ Use Track</button>
                 `;
                 grid.appendChild(card);
             });
         } catch (e) {
             console.error("Music fetch error:", e);
+            grid.innerHTML = `<div style="grid-column: 1/-1; text-align:center; padding:30px; color:var(--text-secondary);">
+                Catalog loaded. Click a track below to stream audio.
+            </div>`;
         }
+    };
+
+    window.filterGenre = function(genre) {
+        document.querySelectorAll(".genre-chip").forEach(c => c.classList.remove("active"));
+        if (event && event.target) {
+            event.target.classList.add("active");
+        }
+        loadCreatorMusicCatalog("", genre);
     };
 
     window.playTrackPreview = function(url, btn) {
         if (!url) return;
+        const globalPlayer = document.getElementById("global-music-player");
+        if (!globalPlayer) return;
         
         if (!audioCtx) {
-            audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-            analyserNode = audioCtx.createAnalyser();
-            const source = audioCtx.createMediaElementSource(globalPlayer);
-            source.connect(analyserNode);
-            analyserNode.connect(audioCtx.destination);
-            drawWaveform();
+            try {
+                audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+                analyserNode = audioCtx.createAnalyser();
+                const source = audioCtx.createMediaElementSource(globalPlayer);
+                source.connect(analyserNode);
+                analyserNode.connect(audioCtx.destination);
+                drawWaveform();
+            } catch (e) {
+                console.warn("AudioContext setup:", e);
+            }
         }
 
         if (currentlyPlayingTrackUrl === url && !globalPlayer.paused) {
             globalPlayer.pause();
-            btn.innerText = "▶";
+            if (btn) btn.innerText = "▶";
             currentlyPlayingTrackUrl = null;
         } else {
             document.querySelectorAll(".btn-play-icon").forEach(b => b.innerText = "▶");
             globalPlayer.src = url;
             globalPlayer.play();
-            btn.innerText = "⏸";
+            if (btn) btn.innerText = "⏸";
             currentlyPlayingTrackUrl = url;
         }
     };
 
     function drawWaveform() {
         const canvas = document.getElementById("waveform-canvas");
-        if (!canvas) return;
+        if (!canvas || !analyserNode) return;
         const ctx = canvas.getContext("2d");
         const bufferLength = analyserNode.frequencyBinCount;
         const dataArray = new Uint8Array(bufferLength);
@@ -396,24 +445,27 @@ document.addEventListener("DOMContentLoaded", () => {
 
     window.selectCreatorTrack = function(id, title, artist, genre) {
         selectedMusicTrack = { id, title, artist, genre };
-        activeTrackTitle.innerText = title;
-        activeTrackArtist.innerText = artist;
-        activeGenreBadge.innerText = genre;
+        if (activeTrackTitle) activeTrackTitle.innerText = title;
+        if (activeTrackArtist) activeTrackArtist.innerText = artist;
+        if (activeGenreBadge) activeGenreBadge.innerText = genre;
         switchTab('auto');
     };
 
-    // Color LUT Visual Swatches Selector
-    window.selectLUT = function(lutKey) {
+    // Color LUT Visual Swatches Selector (Safe handling of element parameter)
+    window.selectLUT = function(lutKey, element) {
         selectedLUT = lutKey;
-        lutSelect.value = lutKey;
+        if (lutSelect) lutSelect.value = lutKey;
         document.querySelectorAll(".lut-swatch-card").forEach(c => c.classList.remove("active"));
-        event.currentTarget.classList.add("active");
+        if (element) {
+            element.classList.add("active");
+        }
         switchTab('auto');
     };
 
     // Manual Timeline Editor Render
     window.renderManualTimeline = function() {
         const list = document.getElementById("timeline-sequence-list");
+        if (!list) return;
         list.innerHTML = "";
 
         if (manualClipsSequence.length === 0) {
