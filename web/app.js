@@ -364,22 +364,8 @@ document.addEventListener("DOMContentLoaded", () => {
         });
     }
 
-    // Dropzone handlers
-    const browseBtn = document.getElementById("browse-btn");
-    if (browseBtn) {
-        browseBtn.addEventListener("click", (e) => {
-            e.stopPropagation();
-            if (videoInput) videoInput.click();
-        });
-    }
-
+    // Dropzone & Native Overlay handlers
     if (dropzone) {
-        dropzone.addEventListener("click", (e) => {
-            if (e.target !== browseBtn && videoInput) {
-                videoInput.click();
-            }
-        });
-
         dropzone.addEventListener("dragover", (e) => {
             e.preventDefault();
             dropzone.classList.add("dragover");
@@ -392,24 +378,27 @@ document.addEventListener("DOMContentLoaded", () => {
         dropzone.addEventListener("drop", (e) => {
             e.preventDefault();
             dropzone.classList.remove("dragover");
-            if (e.dataTransfer && e.dataTransfer.files && e.dataTransfer.files.length) {
-                handleVideoFiles(e.dataTransfer.files);
+            const files = e.dataTransfer ? e.dataTransfer.files : null;
+            if (files && files.length) {
+                handleVideoFiles(files);
             }
         });
     }
 
     if (videoInput) {
         videoInput.addEventListener("change", (e) => {
-            if (e.target.files && e.target.files.length) {
-                handleVideoFiles(e.target.files);
-                videoInput.value = ""; // Reset value so change event fires reliably on re-selection
+            const files = e.target.files;
+            if (files && files.length) {
+                handleVideoFiles(files);
+                videoInput.value = ""; // Reset value for reliable re-selection
             }
         });
     }
 
     async function handleVideoFiles(files) {
-        for (let file of files) {
-            uploadedFiles.push(file);
+        if (!files || !files.length) return;
+        for (let i = 0; i < files.length; i++) {
+            uploadedFiles.push(files[i]);
         }
         renderVideoList();
         await analyzeUploadedFootage();
